@@ -23,7 +23,7 @@ call %CONDA_DIR%\Scripts\activate.bat %CONDA_DIR%
 
 :: Install populationsim, stash source code in sources for debugging
 if not exist src\populationsim\ (
-	call git clone https://github.com/ActivitySim/populationsim.git ./src/populationsim
+	call git clone https://github.com/nick-fournier-rsg/populationsim.git ./src/populationsim
 )
 
 if not exist %CONDA_DIR%\envs\bts_pop (
@@ -31,8 +31,7 @@ if not exist %CONDA_DIR%\envs\bts_pop (
 )
 call mamba activate bts_pop
 
-
-call python -m pip install -e ./src/populationsim
+@REM call python -m pip install -e ./src/populationsim
 
 pause
 exit

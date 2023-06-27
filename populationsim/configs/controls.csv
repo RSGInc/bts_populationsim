@@ -1,0 +1,41 @@
+target,geography,seed_table,importance,control_field,expression
+h_total,BG,households,100000,H_TOTAL,(households.WGTP > 0) & (households.WGTP < np.inf)
+p_total,BG,persons,100000,P_TOTAL,(persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_male,BG,persons,1000,P_MALE,persons.SEX == 1
+p_female,BG,persons,1000,P_FEMALE,persons.SEX == 2
+p_age_0_4,BG,persons,1000,P_AGE_0_4,persons.AGEP <= 4
+p_age_5_17,BG,persons,1000,P_AGE_5_17,(persons.AGEP >4) & (persons.AGEP <= 17)
+p_age_18_34,BG,persons,1000,P_AGE_18_34,(persons.AGEP > 17) & (persons.AGEP <= 34)
+p_age_35_49,BG,persons,1000,P_AGE_35_49,(persons.AGEP > 34) & (persons.AGEP <= 49)
+p_age_50_64,BG,persons,1000,P_AGE_50_64,(persons.AGEP > 49) & (persons.AGEP <= 64)
+p_age_65plus,BG,persons,1000,P_AGE_65PLUS,(persons.AGEP > 64)
+p_race_white,BG,persons,1000,P_RACE_WHITE,persons.RAC1P == 1
+p_race_black,BG,persons,1000,P_RACE_BLACK,persons.RAC1P == 2
+p_race_aapi,BG,persons,1000,P_RACE_AAPI,"persons.RAC1P.isin([6,7])"
+p_race_other,BG,persons,1000,P_RACE_OTHER,"~persons.RAC1P.isin([1,2,6,7])"
+p_hispanic,BG,persons,1000,P_HISPANIC,persons.HISP != 1
+p_non_hispanic,BG,persons,1000,P_NON_HISPANIC,persons.HISP == 1
+h_size_1,TRACT,households,1000,H_SIZE_1,households.NP == 1
+h_size_2,TRACT,households,1000,H_SIZE_2,households.NP == 2
+h_size_3,TRACT,households,1000,H_SIZE_3,households.NP == 3
+h_size_4_plus,TRACT,households,1000,H_SIZE_4PLUS,households.NP >= 4
+h_no_veh,TRACT,households,1000,H_NO_VEH,households.VEH == 0
+h_1ormore_vehpp,TRACT,households,1000,H_1ORMORE_VEHPP,households.NP_ADULTS <= households.VEH
+h_fewer_vehpp,TRACT,households,1000,H_FEWER_VEHPP,households.NP_ADULTS > households.VEH
+p_mode_auto_other,TRACT,persons,1000,P_MODE_AUTO_OTHER,"persons.JWTRNS.isin([1, 7, 8, 12])"
+p_mode_transit,TRACT,persons,1000,P_MODE_TRANSIT,"persons.JWTRNS.isin([2, 3, 4, 5, 6])"
+p_mode_walk_bike,TRACT,persons,1000,P_MODE_WALK_BIKE,"persons.JWTRNS.isin([9,10])"
+p_mode_wfh,TRACT,persons,1000,P_MODE_WFH,persons.JWTRNS == 11
+h_children,BG,households,1000,H_CHILDREN,households.HUPAC != 4
+h_no_children,BG,households,1000,H_NO_CHILDREN,households.HUPAC == 4
+p_university,BG,persons,1000,P_UNIVERSITY,"persons.SCHG.isin([15,16])"
+p_non_university,BG,persons,1000,P_NON_UNIVERSITY,"~persons.SCHG.isin([15,16])"
+h_income_0_25,BG,households,1000,H_INCOME_0_25,households.HINCP <= 25000
+h_income_25_50,BG,households,1000,H_INCOME_25_50,(households.HINCP > 25000) & (households.HINCP <= 50000)
+h_income_50_75,BG,households,1000,H_INCOME_50_75,(households.HINCP > 50000) & (households.HINCP <= 75000)
+h_income_75_100,BG,households,1000,H_INCOME_75_100,(households.HINCP > 75000) & (households.HINCP <= 100000)
+h_income_100_150,BG,households,1000,H_INCOME_100_150,(households.HINCP > 10000) & (households.HINCP <= 150000)
+h_income_150plus,BG,households,1000,H_INCOME_150PLUS,(households.HINCP > 150000)
+p_full_time,BG,persons,1000,P_FULL_TIME,persons.WKHP >= 35
+p_part_time,BG,persons,1000,P_PART_TIME,persons.WKHP < 35
+p_non_worker,BG,persons,1000,P_NON_WORKER,"~persons.ESR.isin([1,2,4,5])"
