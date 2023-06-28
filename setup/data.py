@@ -29,7 +29,7 @@ def api_get(data_type: str, state_fips: int|str|list, geo:str, field_dtypes: dic
     state_fips = ','.join(state_fips) if isinstance(state_fips, list) else state_fips
     
     # Max field request is 50, so we need to split the fields into chunks of 40
-    chunk_size = 40
+    chunk_size = 40 if data_type == 'ACS' else 5
     geo_map = {'BG': 'block%20group:*', 'TRACT': 'tract:*', 'COUNTY': 'county:*', 'STATE': f'state:{state_fips}', 'PUMA': 'public%20use%20microdata%20area:*'}
     nested_geo_map = {'BG': 'TRACT', 'TRACT': 'COUNTY', 'COUNTY': 'STATE', 'PUMA': 'STATE', 'STATE': None}
     
@@ -43,8 +43,15 @@ def api_get(data_type: str, state_fips: int|str|list, geo:str, field_dtypes: dic
         
     df = None
     for i in range(0, len(fields), chunk_size):
-        print(f'Fetching fields {i} to {i + chunk_size} of {len(fields)}')
-        fields_str = ','.join(fields[i:i + chunk_size])        
+        print(f'Fetching fields {i} to {i + chunk_size} of {len(fields)}')        
+        field_chunk = fields[i:i + chunk_size]
+        # Assure that SERIALNO and SPORDER are included in PUMS data requests
+        if data_type == 'PUMS':
+            for x in ['SERIALNO', 'SPORDER']:
+                if x not in field_chunk:
+                    field_chunk.append(x)
+        
+        fields_str = ','.join(field_chunk)
         if data_type == 'PUMS':
             url = f"https://api.census.gov/data/{year}/acs/{acs_type}/pums?get={fields_str}{bg_str}&key={key}"
         else:
@@ -59,6 +66,9 @@ def api_get(data_type: str, state_fips: int|str|list, geo:str, field_dtypes: dic
         chunk_df = pd.DataFrame(chunk[1:], columns=chunkcols)
         
         # Join chunks together
+        if df:
+            assert len(set(df.columns).intersection(chunk_df.columns)) > 0, f'No columns in common between {df.columns} and {chunk_df.columns} to join chunks on'
+        # pd.concat([df, chunk_df], axis=1)       )
         df = chunk_df if df is None else pd.merge(df, chunk_df)
     
     # Sort columns
@@ -93,7 +103,9 @@ def pqio(data_type: str, state_obj_ls: str, geo_fields: dict, base_path: str, da
     for geo, fields in geo_fields.items():
         pqwriter = None
         
-        for i, state_batch in enumerate(batched(state_obj_ls, 5)):
+        batch_size = 5 if data_type == 'ACS' else 1
+        
+        for i, state_batch in enumerate(batched(state_obj_ls, batch_size)):
             # Check if data already exists and get the difference
             fips = [getattr(state_obj, 'fips') for state_obj in state_batch]
             ex_fips = getattr(data_dict.get(geo, pd.DataFrame()), 'state', [])
@@ -101,7 +113,7 @@ def pqio(data_type: str, state_obj_ls: str, geo_fields: dict, base_path: str, da
             state_name = [getattr(state_obj, 'name') for state_obj in state_batch]
             
             if len(fips) > 0:
-                print(f'\nDownloading {geo} {data_type} data for {state_name}, {i * 5} of {len(state_obj_ls)}')                
+                print(f'\nDownloading {geo} {data_type} data for {state_name}, {i * batch_size} of {len(state_obj_ls)}')                
                 
                 # Fetch data from Census API            
                 df = api_get(data_type, fips, geo, fields)
