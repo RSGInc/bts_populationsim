@@ -198,7 +198,7 @@ def fetch(data_type: str) -> dict:
                 if len(missing_states) > 0 or len(missing_columns) > 0:                    
                     missing_states = set(us.states.lookup(x) for x in missing_states)                    
                     kwargs['geo_fields'][geo] = fields
-                    kwargs['state_obj_ls'].add(missing_states)
+                    kwargs['state_obj_ls'] = missing_states.union(kwargs['state_obj_ls'])
                     
                 else:
                     print(f'Loading existing {geo} {data_type} data')

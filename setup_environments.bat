@@ -1,6 +1,5 @@
 
 @echo on
-:: Set your conda path here
 
 mkdir sources
 set WORKING_DIR=%~dp0
@@ -9,7 +8,7 @@ set CONDA_DIR=%WORKING_DIR%\mambaforge
 
 
 if not exist %CONDA_DIR% (
-	:: You can manually set a local mamba dir here
+	:: Alternatively, you can manually set a local mamba dir here
 	set CONDA_DIR=C:\Users\nick.fournier\AppData\Local\mambaforge-pypy3
 )
 
@@ -21,9 +20,12 @@ if not exist %CONDA_DIR% (
 
 call %CONDA_DIR%\Scripts\activate.bat %CONDA_DIR%
 
-:: Install populationsim, stash source code in sources for debugging
+:: Install, stash source code in sources for debugging
 if not exist src\populationsim\ (
 	call git clone https://github.com/nick-fournier-rsg/populationsim.git ./src/populationsim
+)
+
+if not exist src\populationsim\ (
 	call git clone https://github.com/ActivitySim/activitysim.git ./src/activitysim
 )
 
