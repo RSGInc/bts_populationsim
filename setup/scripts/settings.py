@@ -9,7 +9,8 @@ load_dotenv()
 
 # User-defined constants
 YEAR = 2019
-STATES = ['VT','AK','ND', 'SD','WY', 'RI'] #[x.abbr for x in states.STATES]
+# STATES = ['VT','AK','ND', 'SD','WY', 'RI'] #[x.abbr for x in states.STATES]
+STATES = [x.abbr for x in states.STATES]
 ACS_TYPE = 'acs5'
 RAW_DATA_DIR = 'setup/raw'
 POPSIM_DIR = 'populationsim'

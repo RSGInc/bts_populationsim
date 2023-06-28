@@ -36,8 +36,9 @@ if __name__ == '__main__':
     add_run_args(parser)
     args = parser.parse_args()
     
-    args.config = ['populationsim/configs']
+    args.config = []
     args.config += ['populationsim/configs_mp']
+    args.config += ['populationsim/configs']
     args.data = 'populationsim/data'
     args.output = 'populationsim/output'
     

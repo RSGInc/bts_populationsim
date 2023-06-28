@@ -6,6 +6,8 @@ channels:
 dependencies:
   - tqdm
   - geopandas
+  - python-dotenv
+  - activitysim==1.2.0
   - pip:
     - us
     - pypums

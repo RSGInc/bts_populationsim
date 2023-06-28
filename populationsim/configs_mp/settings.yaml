@@ -16,8 +16,8 @@ models:
   - meta_control_factoring
   - final_seed_balancing
   - integerize_final_seed_weights
-  - sub_balancing.geography=TRACT
   ### mp_sub_balancing_BG step
+  - sub_balancing.geography=TRACT
   - sub_balancing.geography=BG
   ### mp_summarize step
   - expand_households
@@ -32,8 +32,8 @@ resume_after:
 multiprocess_steps:
   - name: mp_seed_balancing
     begin: input_pre_processor
-  - name: mp_sub_balancing_BG
-    begin: sub_balancing.geography=BG
+  - name: mp_sub_balancing
+    begin: sub_balancing.geography=TRACT
     num_processes: 4
     slice:
       tables:
