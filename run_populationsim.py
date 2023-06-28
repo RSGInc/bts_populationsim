@@ -42,4 +42,7 @@ if __name__ == '__main__':
     args.data = 'populationsim/data'
     args.output = 'populationsim/output'
     
+    if 'populationsim/configs_mp' in args.config:
+        args.output += '_mp'
+    
     sys.exit(run(args))
