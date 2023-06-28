@@ -1,8 +1,10 @@
 import pandas as pd
 import requests
+from requests.adapters import HTTPAdapter, Retry
 import json
 from tqdm import tqdm
 import settings
+from itertools import islice
 
 def format_geoids(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -48,7 +50,16 @@ def get_with_progress(url: str) -> bytes:
         str: The data string from the URL
     """
 
-    response = requests.get(url, stream=True)
+    try:
+        s = requests.Session()
+        retries = Retry(total=5,
+                        backoff_factor=0.1,
+                        status_forcelist=[ 500, 502, 503, 504])
+
+        s.mount('https://', HTTPAdapter(max_retries=retries))
+        response = requests.get(url, stream=True)
+    except:
+        raise Exception(f'Error fetching data from {url}, check your internet connection or maybe reduce the request size?')
     
     # Check the response status code        
     assert response.status_code == 200, f'{response.status_code} error: {response.text}'
@@ -65,3 +76,12 @@ def get_with_progress(url: str) -> bytes:
         raw_data = json.loads(raw_data.decode('utf-8'))
     
     return raw_data
+
+def batched(iterable, n):
+    "Batch data into tuples of length n. The last batch may be shorter."
+    # batched('ABCDEFG', 3) --> ABC DEF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    it = iter(iterable)
+    while (batch := tuple(islice(it, n))):
+        yield batch

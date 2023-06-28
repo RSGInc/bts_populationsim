@@ -2,13 +2,12 @@ import settings
 import us
 import os
 import pandas as pd
-from tqdm import tqdm
-from utils import get_with_progress
+from utils import get_with_progress, batched
 import pyarrow as pa
 import pyarrow.parquet as pq
 
 
-def api_get(data_type: str, state_fips: int, geo:str, field_dtypes: dict) -> pd.DataFrame:
+def api_get(data_type: str, state_fips: int|str|list, geo:str, field_dtypes: dict) -> pd.DataFrame:
     """
     Fetches data from the Census API and returns a pandas DataFrame.
 
@@ -27,9 +26,10 @@ def api_get(data_type: str, state_fips: int, geo:str, field_dtypes: dict) -> pd.
     acs_type = settings.ACS_TYPE  
     key = settings.CENSUS_API_KEY        
     fields = list(field_dtypes.keys())
+    state_fips = ','.join(state_fips) if isinstance(state_fips, list) else state_fips
     
-    # Max field request is 50, so we need to split the fields into chunks of 50 (49 + 'NAME')
-    chunk_size = 49
+    # Max field request is 50, so we need to split the fields into chunks of 40
+    chunk_size = 40
     geo_map = {'BG': 'block%20group:*', 'TRACT': 'tract:*', 'COUNTY': 'county:*', 'STATE': f'state:{state_fips}', 'PUMA': 'public%20use%20microdata%20area:*'}
     nested_geo_map = {'BG': 'TRACT', 'TRACT': 'COUNTY', 'COUNTY': 'STATE', 'PUMA': 'STATE', 'STATE': None}
     
@@ -43,6 +43,7 @@ def api_get(data_type: str, state_fips: int, geo:str, field_dtypes: dict) -> pd.
         
     df = None
     for i in range(0, len(fields), chunk_size):
+        print(f'Fetching fields {i} to {i + chunk_size} of {len(fields)}')
         fields_str = ','.join(fields[i:i + chunk_size])        
         if data_type == 'PUMS':
             url = f"https://api.census.gov/data/{year}/acs/{acs_type}/pums?get={fields_str}{bg_str}&key={key}"
@@ -92,13 +93,14 @@ def pqio(data_type: str, state_obj_ls: str, geo_fields: dict, base_path: str, da
     for geo, fields in geo_fields.items():
         pqwriter = None
         
-        for state_obj in tqdm(state_obj_ls):
+        for state_batch in batched(state_obj_ls, 5):
+            # Check if data already exists and get the difference
+            fips = [getattr(state_obj, 'fips') for state_obj in state_batch]
+            ex_fips = getattr(data_dict.get(geo, pd.DataFrame()), 'state', [])
+            fips = list(set(fips).difference(ex_fips))
+            state_name = [getattr(state_obj, 'name') for state_obj in state_batch]
             
-            fips = getattr(state_obj, 'fips')
-            state_name = getattr(state_obj, 'name')
-            df = data_dict.get(geo)
-            
-            if df is None or int(fips) not in df.state.unique():
+            if len(fips) > 0:
                 print(f'\nDownloading {data_type} data for {state_name}')                
                 
                 # Fetch data from Census API            
@@ -206,9 +208,11 @@ def fetch(data_type: str) -> dict:
             except:
                 # Couldn't read the file, so add geo field to kwargs to be updated
                 print(f'Could not load existing {geo} {data_type} data, fetching')
+                kwargs['state_obj_ls'] = set(us.states.lookup(x) for x in fips_list)
                 kwargs['geo_fields'][geo] = fields
                 
         # Fetch data, appending the parquet data file for each state.
+        print(f'Missing data for {len(kwargs["state_obj_ls"])} states')
         data_dict = pqio(**kwargs)
         
     return data_dict
