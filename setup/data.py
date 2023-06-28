@@ -93,7 +93,7 @@ def pqio(data_type: str, state_obj_ls: str, geo_fields: dict, base_path: str, da
     for geo, fields in geo_fields.items():
         pqwriter = None
         
-        for state_batch in batched(state_obj_ls, 5):
+        for i, state_batch in enumerate(batched(state_obj_ls, 5)):
             # Check if data already exists and get the difference
             fips = [getattr(state_obj, 'fips') for state_obj in state_batch]
             ex_fips = getattr(data_dict.get(geo, pd.DataFrame()), 'state', [])
@@ -101,7 +101,7 @@ def pqio(data_type: str, state_obj_ls: str, geo_fields: dict, base_path: str, da
             state_name = [getattr(state_obj, 'name') for state_obj in state_batch]
             
             if len(fips) > 0:
-                print(f'\nDownloading {data_type} data for {state_name}')                
+                print(f'\nDownloading {data_type} data for {state_name}, batch {i} of {len(state_obj_ls)}')                
                 
                 # Fetch data from Census API            
                 df = api_get(data_type, fips, geo, fields)
