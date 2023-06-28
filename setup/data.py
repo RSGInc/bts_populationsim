@@ -101,7 +101,7 @@ def pqio(data_type: str, state_obj_ls: str, geo_fields: dict, base_path: str, da
             state_name = [getattr(state_obj, 'name') for state_obj in state_batch]
             
             if len(fips) > 0:
-                print(f'\nDownloading {data_type} data for {state_name}, batch {i} of {len(state_obj_ls)}')                
+                print(f'\nDownloading {geo} {data_type} data for {state_name}, batch {i} of {len(state_obj_ls)}')                
                 
                 # Fetch data from Census API            
                 df = api_get(data_type, fips, geo, fields)
