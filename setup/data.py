@@ -29,7 +29,7 @@ def api_get(data_type: str, state_fips: int|str|list, geo:str, field_dtypes: dic
     state_fips = ','.join(state_fips) if isinstance(state_fips, list) else state_fips
     
     # Max field request is 50, so we need to split the fields into chunks of 40
-    chunk_size = 40 if data_type == 'ACS' else 5
+    chunk_size = 40 if data_type == 'ACS' else 3
     geo_map = {'BG': 'block%20group:*', 'TRACT': 'tract:*', 'COUNTY': 'county:*', 'STATE': f'state:{state_fips}', 'PUMA': 'public%20use%20microdata%20area:*'}
     nested_geo_map = {'BG': 'TRACT', 'TRACT': 'COUNTY', 'COUNTY': 'STATE', 'PUMA': 'STATE', 'STATE': None}
     
@@ -60,13 +60,14 @@ def api_get(data_type: str, state_fips: int|str|list, geo:str, field_dtypes: dic
             
         # Fetch data from Census API
         chunk = get_with_progress(url)
+
         chunkcols = chunk[0]
         assert isinstance(chunkcols, list), 'Census API returned an error. Check your API key.'
         
         chunk_df = pd.DataFrame(chunk[1:], columns=chunkcols)
         
         # Join chunks together
-        if df:
+        if df is not None:
             assert len(set(df.columns).intersection(chunk_df.columns)) > 0, f'No columns in common between {df.columns} and {chunk_df.columns} to join chunks on'
         # pd.concat([df, chunk_df], axis=1)       )
         df = chunk_df if df is None else pd.merge(df, chunk_df)

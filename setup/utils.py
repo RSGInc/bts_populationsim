@@ -52,9 +52,9 @@ def get_with_progress(url: str) -> bytes:
 
     try:
         s = requests.Session()
-        retries = Retry(total=5,
+        retries = Retry(total=10,
                         backoff_factor=0.1,
-                        status_forcelist=[ 500, 502, 503, 504])
+                        status_forcelist=[500, 502, 503, 504])
 
         s.mount('https://', HTTPAdapter(max_retries=retries))
         response = requests.get(url, stream=True)
