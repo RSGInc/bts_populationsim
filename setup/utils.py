@@ -22,18 +22,21 @@ def format_geoids(df: pd.DataFrame) -> pd.DataFrame:
             is_formatted = (df[geoid].apply(len) == full_digits).all()
         except:
             is_formatted = False
-        
+                
         if geoid in df.columns and not is_formatted:
-            df[geoid] = df[geoid].str.zfill(digits)
+            # Pre formatting the geoid to be consistent with itself
+            df[geoid] = df[geoid].astype(str).str.zfill(digits).str[-digits:]            
             
             # Concatenate the geoid parts ensuring that only the appropriate last n-digits are used
-            parts = []           
+            parts = []
             for part in settings.GEOID_STRUCTURE[geoid]:
                 part_digits = settings.GEOID_LEN[part]
+                df[part] = df[part].astype(int).astype(str)
+                
                 assert df[part].isna().sum() == 0, f'Geoid part {part} has missing values'
                 parts.append(df[part].str[-part_digits:].astype(str))
             
-            df[geoid] = pd.concat(parts, axis=1).sum(axis=1)
+            df[geoid] = pd.concat(parts, axis=1).sum(axis=1).astype(int)
             # df[geoid] = df[settings.GEOID_STRUCTURE[geoid]].sum(axis=1)
         
     return df            
@@ -85,3 +88,5 @@ def batched(iterable, n):
     it = iter(iterable)
     while (batch := tuple(islice(it, n))):
         yield batch
+        
+    

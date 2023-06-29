@@ -7,7 +7,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 
-def api_get(data_type: str, state_fips: int|str|list, geo:str, field_dtypes: dict) -> pd.DataFrame:
+def api_get(data_type: str, state_fips: int|str|list, geo: str, field_dtypes: dict) -> pd.DataFrame:
     """
     Fetches data from the Census API and returns a pandas DataFrame.
 
@@ -42,13 +42,14 @@ def api_get(data_type: str, state_fips: int|str|list, geo:str, field_dtypes: dic
         next_geo = nested_geo_map[next_geo]
         
     df = None
-    for i in range(0, len(fields), chunk_size):
-        print(f'Fetching fields {i} to {i + chunk_size} of {len(fields)}')        
+    for i in range(0, len(fields), chunk_size):        
+        to_iter = min(i + chunk_size, len(fields))
+        print(f'Fetching fields {i} to {to_iter} of {len(fields)}')
         field_chunk = fields[i:i + chunk_size]
-        # Assure that SERIALNO and SPORDER are included in PUMS data requests
+        # Assure that SERIALNO or SPORDER are included in PUMS data requests for merging
         if data_type == 'PUMS':
             for x in ['SERIALNO', 'SPORDER']:
-                if x not in field_chunk:
+                if x in fields and x not in field_chunk:
                     field_chunk.append(x)
         
         fields_str = ','.join(field_chunk)
@@ -102,10 +103,15 @@ def pqio(data_type: str, state_obj_ls: str, geo_fields: dict, base_path: str, da
     assert isinstance(data_dict, dict), 'data must be a dictionary'
     
     for geo, fields in geo_fields.items():
-        pqwriter = None
+        batch_size = 5
+        geo_str = geo
         
-        batch_size = 5 if data_type == 'ACS' else 1
-        
+        # If its PUMS data we set geo string to PUMA for the API call but the geo field is HH or PER
+        if data_type == 'PUMS':
+            batch_size = 1
+            geo_str = 'PUMA'
+            
+        # Create a backup file before opening to prevent data loss
         for i, state_batch in enumerate(batched(state_obj_ls, batch_size)):
             # Check if data already exists and get the difference
             fips = [getattr(state_obj, 'fips') for state_obj in state_batch]
@@ -115,31 +121,26 @@ def pqio(data_type: str, state_obj_ls: str, geo_fields: dict, base_path: str, da
             
             if len(fips) > 0:
                 print(f'\nDownloading {geo} {data_type} data for {state_name}, {i * batch_size} of {len(state_obj_ls)}')                
-                
+                    
                 # Fetch data from Census API            
-                df = api_get(data_type, fips, geo, fields)
+                df = api_get(data_type, fips, geo_str, fields)
                 
-                # Convert to pyarrow table
-                table = pa.Table.from_pandas(df)
-                
-                # Intialize parquet writer if empty            
-                if pqwriter is None:                    
-                    path = os.path.join(settings.RAW_DATA_DIR, f'{base_path}_{geo}.parquet')
-                    pqwriter = pq.ParquetWriter(path, table.schema)
-                
-                # Write table to parquet and append to data
-                pqwriter.write_table(table)
+                # Append to the existing data
                 if data_dict.get(geo) is None:
                     data_dict[geo] = df
                 else:
-                    data_dict[geo] = df
+                    # Check if there is an index to match
+                    if data_dict[geo].index.name:
+                        df.set_index(data_dict[geo].index.name, inplace=True)                    
+                    data_dict[geo] = pd.concat([data_dict[geo], df], axis=0)
+        
+                # Save updated data
+                path = os.path.join(settings.RAW_DATA_DIR, f'{base_path}_{geo}.parquet')
+                data_dict[geo].to_parquet(path)
                 
             else:
-                print(f'\nLoading existing {data_type} data for {state_name}')
+                print(f'\nLoading existing {geo} {data_type} data for {state_name}')
                 
-        if pqwriter:            
-            pqwriter.close()
-                    
     return data_dict
 
 def fetch(data_type: str) -> dict:
@@ -168,8 +169,8 @@ def fetch(data_type: str) -> dict:
     fips_list = settings.FIPS
     
     if data_type == 'PUMS':
-        field_dict = dict(ele for sub in settings.PUMS_FIELDS.values() for ele in sub.items())
-        geo_fields = {'PUMA': field_dict}
+        # geo_fields = {'PUMA': dict(ele for sub in settings.PUMS_FIELDS.values() for ele in sub.items())}
+        geo_fields = settings.PUMS_FIELDS
         base_path = settings.PUMS_DATA_PREFIX                
     else:
         geo_fields = settings.ACS_GEO_FIELDS
@@ -224,13 +225,15 @@ def fetch(data_type: str) -> dict:
                 kwargs['state_obj_ls'] = set(us.states.lookup(x) for x in fips_list)
                 kwargs['geo_fields'][geo] = fields
                 
-        # Fetch data, appending the parquet data file for each state.
-        print(f'Missing data for {len(kwargs["state_obj_ls"])} states')
+            # Fetch data, appending the parquet data file for each state.
+            if len(kwargs['state_obj_ls']) > 0:
+                print(f'Missing data {geo} {data_type} for {len(kwargs["state_obj_ls"])} states')
         data_dict = pqio(**kwargs)
         
     return data_dict
 
 
-# Fetch the data and attach to the module
-ACS_DATA = fetch('ACS')
-PUMS_DATA = fetch('PUMS')
+if __name__ == '__main__':
+    # Fetch the data and attach to the module
+    ACS_DATA = fetch('ACS')
+    PUMS_DATA = fetch('PUMS')

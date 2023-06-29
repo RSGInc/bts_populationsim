@@ -1,14 +1,16 @@
 import pandas as pd
 import geopandas as gpd
 
-from data import ACS_DATA, PUMS_DATA
-from geographies import GEO_BG, GEO_PUMA
+import data
+import geographies
 from utils import format_geoids
 import settings
 
 
 ### Aggregate special ACS targets ###
 def create_acs_targets():
+    ACS_DATA = data.fetch('ACS')
+    
     print('Creating ACS targets...')
     # Make a new copy to work with
     acs_data = ACS_DATA.copy()
@@ -40,34 +42,42 @@ def create_acs_targets():
 
 ### This file aggregates the PUMS data to match ACS data. ###
 def create_seeds():
+    PUMS_DATA = data.fetch('PUMS')
     print('Creating seed files...')
-    pums = PUMS_DATA['PUMA']
     
+    # Join together to ensure that the same households are selected
+    pums = pd.merge(PUMS_DATA['HH'], PUMS_DATA['PER'], on=['SERIALNO', 'state', 'public use microdata area'])
+
     # Concatenate state and PUMA to create a unique PUMA identifier
-    pums.PUMA = pums.state.astype(str) + pums.PUMA.astype(str).str.zfill(settings.GEOID_LEN['PUMA'])
+    pums.rename(columns={'state': 'STATE'}, inplace=True)
+    pums = format_geoids(pums)    
     pums['REGION'] = 1
     
     # Create a new unique integer household_id column
-    pums['hh_id'] = pums.groupby('SERIALNO').ngroup() + 1
-    pums['hh_id'] = pums.PUMA + pums.hh_id.astype(str).str.zfill(8)   
+    pums['hh_id'] = (pums.groupby('SERIALNO').ngroup() + 1).astype(str).str.zfill(8)
+    pums['hh_id'] = pums.PUMA.astype(str) + pums.hh_id
         
-    # Separate the household and person dataframes
+    # Separate the household and person dataframes back out
     hhcols = list(settings.PUMS_FIELDS['HH'].keys()) + ['hh_id', 'REGION']
     percols = list(settings.PUMS_FIELDS['PER'].keys()) + ['REGION']
     pums_hh = pums[hhcols].groupby('hh_id').first()
     pums_per = pums.set_index('hh_id')[percols]
 
     # Add num adults
-    pums_hh = pums_hh.join(
-        pums_per.groupby('hh_id').apply(lambda x: (x.AGEP >= 18).sum()).to_frame('NP_ADULTS')
-        )
+    pums_hh = pums_hh.join(pums_per[pums_per.AGEP >= 18].groupby('hh_id').size().to_frame('NP_ADULTS'))
+    pums_hh.NP_ADULTS.fillna(0, inplace=True)
+    pums_hh.NP_ADULTS = pums_hh.NP_ADULTS.astype(int)
     
+    # Save to populationsim inputs data folder
     pums_hh.to_csv(f'{settings.POPSIM_DIR}/data/seed_households.csv')
     pums_per.to_csv(f'{settings.POPSIM_DIR}/data/seed_persons.csv')
     
     return
 
-def create_crosswalk():
+def create_crosswalk():    
+    GEO_PUMA = geographies.fetch('PUMA')
+    GEO_BG = geographies.fetch('BG')
+    
     print('Creating crosswalk...')
     # Perform a spatial join on the PUMA and BG geometries to create a xwalk
     puma = GEO_PUMA.set_index('GEOID')

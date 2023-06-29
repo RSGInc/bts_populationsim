@@ -9,9 +9,7 @@ from bs4 import BeautifulSoup
 from utils import get_with_progress
 
 
-
-
-def fetch_geography(geo: str, year: int) -> gpd.GeoDataFrame:
+def fetch(geo: str, year: int = settings.YEAR) -> gpd.GeoDataFrame:
     """
     Fetches geography files from the Census FTP server.
 
@@ -107,6 +105,8 @@ def fetch_geography(geo: str, year: int) -> gpd.GeoDataFrame:
     geo_df.rename(columns=names, inplace=True)
     
     return gpd.GeoDataFrame(geo_df)
-    
-GEO_BG = fetch_geography('BG', settings.YEAR)
-GEO_PUMA = fetch_geography('PUMA', settings.YEAR)
+
+
+if __name__ == '__main__':
+    GEO_BG = fetch('BG')
+    GEO_PUMA = fetch('PUMA')

@@ -13,7 +13,7 @@ POPSIM_DIR = 'C:/gitclones/bts_populationsim/populationsim'
 SETUP_DIR = 'C:/gitclones/bts_populationsim/setup'
 RAW_DATA_DIR = os.path.join(SETUP_DIR, 'raw')
 
-# STATES = ['VT','AK','ND', 'SD','WY', 'RI'] #[x.abbr for x in states.STATES]
+# STATES = ['VT','AK']#,'ND', 'SD','WY', 'RI', 'MT', 'UT']
 STATES = [x.abbr for x in states.STATES]
 ACS_TYPE = 'acs5'
 
@@ -33,6 +33,7 @@ PUMS_FIELDS = {
         'HUPAC': int,
     },
     'PER': {
+        'SERIALNO': str,
         'SPORDER': int,
         'PWGTP': int,
         'JWTRNS': int,        
