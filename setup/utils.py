@@ -1,14 +1,20 @@
 import pandas as pd
+import numpy as np
 import requests
 from requests.adapters import HTTPAdapter, Retry
 import json
 from tqdm import tqdm
 import settings
 from itertools import islice
+from bs4 import BeautifulSoup
+import os
+import us
+
 
 def format_geoids(df: pd.DataFrame) -> pd.DataFrame:
     """
     This function formats the geoids in a DataFrame to the correct length and format.
+    This is done using integer summation rather than string concatenation for performance over large dataframe.
 
     Args:
         df (pd.DataFrame): the DataFrame to format
@@ -16,31 +22,35 @@ def format_geoids(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: the formatted DataFrame
     """
-    for geoid, digits in settings.GEOID_LEN.items():        
-        full_digits = sum([settings.GEOID_LEN[x] for x in settings.GEOID_STRUCTURE[geoid]])        
-        try:
-            is_formatted = (df[geoid].apply(len) == full_digits).all()
-        except:
-            is_formatted = False
-                
-        if geoid in df.columns and not is_formatted:
-            # Pre formatting the geoid to be consistent with itself
-            df[geoid] = df[geoid].astype(str).str.zfill(digits).str[-digits:]            
+    
+    for geoid, digits in settings.GEOID_LEN.items():
+        if geoid in df.columns:
+            print(f'Formatting {geoid} GEOID field')
+            
+            # Ensure that the geoid is an integer
+            if df[geoid].dtype != 'int64' or df[geoid].dtype != 'int32':
+                df[geoid] = df[geoid].astype(np.int64)
+            
+            # Pre formatting the geoid to be consistent with itself           
+            df[geoid] = df[geoid] % (10 ** digits)
             
             # Concatenate the geoid parts ensuring that only the appropriate last n-digits are used
-            parts = []
-            for part in settings.GEOID_STRUCTURE[geoid]:
-                part_digits = settings.GEOID_LEN[part]
-                df[part] = df[part].astype(int).astype(str)
+            new_id = 0
+            for i, part_col in enumerate(settings.GEOID_STRUCTURE[geoid]):
+                part_digits = settings.GEOID_LEN[part_col]
                 
-                assert df[part].isna().sum() == 0, f'Geoid part {part} has missing values'
-                parts.append(df[part].str[-part_digits:].astype(str))
+                assert df[part_col].isna().sum() == 0, f'Geoid part {part_col} has missing values'
+                
+                part = df[part_col] % (10 ** part_digits)
+                if i > 0:
+                    new_id *= (10 ** digits)
+
+                new_id += part                
             
-            df[geoid] = pd.concat(parts, axis=1).sum(axis=1).astype(int)
-            # df[geoid] = df[settings.GEOID_STRUCTURE[geoid]].sum(axis=1)
-        
-    return df            
-    
+            # Send the new geoid back to the DataFrame
+            df[geoid] = new_id
+
+    return df              
 
 def get_with_progress(url: str) -> bytes:
     """
@@ -70,7 +80,7 @@ def get_with_progress(url: str) -> bytes:
     raw_data = b''        
     total = int(response.headers.get('Content-Length', 0))
     with tqdm(total=total, unit='B', unit_scale=True, unit_divisor=1024) as pbar:            
-        for chunk in response.iter_content(1024):
+        for chunk in response.iter_content(1000000):
             raw_data += chunk
             pbar.update(len(chunk))
             
@@ -89,4 +99,105 @@ def batched(iterable, n):
     while (batch := tuple(islice(it, n))):
         yield batch
         
+def parse_census_ftp(url: str, cache_dir: str, data_type: str) -> list:
+    """
+    This function parses the Census' HTTPS FTP server for data files and 
+    returns a list of tuples containing the file name, download URL,
+    file path and level (e.g., hh or per, bg or tracts, etc.)
+
+    Args:
+        url (str): The URL to the Census HTTPS FTP server.
+        cache_dir (str): The directory to cache the data files.
+        data_type (str): The type of data to download (geography or pums).
+
+    Raises:
+        Exception: If the data type is not geography or pums.
+        Exception: If the file name is not in the expected format.
+
+    Returns:
+        list: A list of tuples containing the file name, download URL,
+    """
     
+    data_type = data_type.lower()
+    assert data_type.lower() in ['geography', 'pums'], f'Invalid data type {data_type}'
+    
+    def check_soup(node: BeautifulSoup) -> bool:
+        """
+        This function checks if the node is a valid file to download.
+
+        Args:
+            node (str): The beautiful soup node to check.
+
+        Raises:
+            Exception: The file name is not in the expected format.
+
+        Returns:
+            bool: True if the file is valid, False otherwise.
+            
+        """
+                
+        try:            
+            href = node.get('href')
+            assert isinstance(href, str), f'Invalid href {href}'
+
+            is_zip = href.endswith('.zip')
+            if data_type == 'geography':
+                is_state = os.path.splitext(href)[0].split('_')[2] in settings.FIPS
+            elif data_type == 'pums':
+                is_state = os.path.splitext(href)[0][-2:].upper() in settings.STATES
+            else:
+                raise Exception(f'Invalid data type {data_type}')
+        except:
+            return False
+            
+        if is_zip and is_state:
+            return True
+        else:
+            return False
+    
+    def parse_soup(node: BeautifulSoup) -> tuple:
+        """
+        This function parses the beautiful soup node and returns a tuple
+
+        Args:
+            node (str): The beautiful soup node to parse.
+
+        Raises:
+            Exception: The file name is not in the expected format.
+
+        Returns:
+            tuple: A tuple containing the fips code, file path, download URL, and level
+        """
+        href = node.get('href')
+        assert isinstance(href, str), f'Invalid href {href}'
+        
+        dlurl = url + '/' + href
+        file_name = os.path.splitext(href)[0]        
+        level = None
+        if data_type == 'geography':
+            fips, level = file_name.split('_')[2:]
+        else:            
+            suffix = file_name.split('_')[1]
+            fips = getattr(us.states.lookup(suffix[-2:].upper()), 'fips')            
+            if 'h' in suffix[0]:
+                level = 'hh'
+            elif 'p' in file_name:
+                level = 'per'
+            else:
+                raise Exception(f'Invalid file name {file_name}, expected csv_h[state] or csv_p[state]')
+            
+        if os.path.isabs(cache_dir):
+            fpath = os.path.join(cache_dir, href)
+        else:
+            fpath = os.path.join(settings.RAW_DATA_DIR, cache_dir, href)
+        
+        return fips, fpath, dlurl, level
+
+    # Connect to the FTP server
+    response = requests.get(url)
+    
+    # Get file URLs
+    soup = BeautifulSoup(response.text, 'html.parser')
+    zips = [parse_soup(node) for node in soup.find_all('a') if check_soup(node)]
+    
+    return zips

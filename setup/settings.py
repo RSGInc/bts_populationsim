@@ -8,12 +8,13 @@ import settings_helper
 load_dotenv()
 
 # User-defined constants
-YEAR = 2019
+YEAR = 2021
 POPSIM_DIR = 'C:/gitclones/bts_populationsim/populationsim'
 SETUP_DIR = 'C:/gitclones/bts_populationsim/setup'
 RAW_DATA_DIR = os.path.join(SETUP_DIR, 'raw')
 
-# STATES = ['VT','AK']#,'ND', 'SD','WY', 'RI', 'MT', 'UT']
+# STATES = ['VT','AK','ND', 'SD','WY', 'RI', 'MT', 'UT']
+# STATES = ['CA', 'NY', 'TX', 'WA']
 STATES = [x.abbr for x in states.STATES]
 ACS_TYPE = 'acs5'
 
@@ -25,7 +26,8 @@ type (int, float, str, etc.) to ensure that the data is read in correctly.
 PUMS_FIELDS = {
     'HH': {
         'SERIALNO': str,
-        'PUMA': int, 
+        'PUMA': int,
+        'ST': int,
         'WGTP':int, 
         'NP': int,
         'HINCP': int, 
@@ -35,6 +37,8 @@ PUMS_FIELDS = {
     'PER': {
         'SERIALNO': str,
         'SPORDER': int,
+        'PUMA': int,
+        'ST': int,
         'PWGTP': int,
         'JWTRNS': int,        
         'ESR': int,        
@@ -46,6 +50,10 @@ PUMS_FIELDS = {
         'HISP': int,
         'WKHP': int,
     }
+}
+
+PUMS_RENAME = {
+    'ST': 'STATE',
 }
 
 # Inferred constants
@@ -67,6 +75,7 @@ assert set(CONTROL_FIELDS) == set(PUMS_AGGREGATOR.control_field),\
 # CONSTANTS
 ACS_DATA_PREFIX = 'acs_data'
 PUMS_DATA_PREFIX = 'pums_data'
+PUMS_SOURCE = 'ftp'
 
 GEOID_LEN = {
     'STATE': 2,

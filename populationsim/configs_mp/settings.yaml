@@ -1,7 +1,7 @@
 inherit_settings: True
 
 multiprocess: True
-num_processes: 4
+num_processes: 6
 cleanup_pipeline_after_run: True
 
 slice_geography: STATE

@@ -1,10 +1,11 @@
 import settings
 import us
 import os
+import numpy as np
 import pandas as pd
-from utils import get_with_progress, batched
-import pyarrow as pa
-import pyarrow.parquet as pq
+import zipfile
+from io import BytesIO
+from utils import get_with_progress, batched, parse_census_ftp
 
 
 def api_get(data_type: str, state_fips: int|str|list, geo: str, field_dtypes: dict) -> pd.DataFrame:
@@ -143,7 +144,7 @@ def pqio(data_type: str, state_obj_ls: str, geo_fields: dict, base_path: str, da
                 
     return data_dict
 
-def fetch(data_type: str) -> dict:
+def fetch_from_api(data_type: str) -> dict:
     
     """
     Specify PUMS or ACS to fetch Census data from the Census API and returns a pandas DataFrame.
@@ -233,7 +234,135 @@ def fetch(data_type: str) -> dict:
     return data_dict
 
 
+def fetch_pums_from_ftp(year: int = settings.YEAR) -> dict:
+    """
+    Fetches geography files from the Census FTP server.
+
+    Args:
+        geo (str): The geography to fetch. Must be one of 'BG', 'TRACT', 'COUNTY', 'STATE', or 'PUMA'.
+        year (int): The year to fetch data for.
+
+    Returns:
+        gpd.GeoDataFrame: The geography data.
+    """    
+    
+    geo_fields = settings.PUMS_FIELDS
+    base_path = settings.PUMS_DATA_PREFIX  
+        
+    url = f'https://www2.census.gov/programs-surveys/acs/data/pums/{year}/5-Year/'
+    zips = parse_census_ftp(url, cache_dir=os.path.join(settings.RAW_DATA_DIR, 'csv'), data_type='PUMS')
+    
+    assert isinstance(zips, list), f'Expected list, got {type(zips)}'
+    
+    if not os.path.exists(os.path.join(settings.RAW_DATA_DIR, 'csv')):
+        os.mkdir(os.path.join(settings.RAW_DATA_DIR, 'csv'))
+    
+    data_dict = {}
+    for geo, fields in geo_fields.items():
+        
+        # Parquet file path
+        pq_path = f'{settings.RAW_DATA_DIR}/{base_path}_{geo}.parquet'
+        if os.path.exists(pq_path):
+            print(f'Loading existing {geo} PUMS data')
+            df = pd.read_parquet(pq_path)
+        else:
+            df = pd.DataFrame()
+        
+        # Initialize with existing data
+        new_data = [df] 
+        
+        # Check which state column is present
+        state_list = [] 
+        if 'ST' in df.columns:
+            state_list = df['ST'].unique().astype(str)
+            state_list = list(np.char.zfill(state_list, 2))               
+        
+        # The selected fields to load
+        usecols = list(fields.keys())
+               
+        # Keep only the states we need to add to the parquet file
+        level_zips = []
+        missing_cols = set(fields.keys()).difference(df.columns)
+        is_missing_cols = len(missing_cols) > 0
+        
+        if is_missing_cols:
+            print(f'Missing PUMS columns {missing_cols}, recreating {geo} PUMS cache data')
+            new_data = []
+            
+        for fips_code, fpath, zurl, level in zips:
+            is_file = 'csv' in zurl and geo == level.upper()
+            is_missing_state = fips_code in settings.FIPS and fips_code not in state_list            
+            if is_file and (is_missing_state or is_missing_cols):
+                    level_zips.append((fips_code, fpath, zurl, level))
+        
+        # Loop through the states and download/load the data into dataframes 
+        for i, (fips_code, fpath, zurl, level) in enumerate(level_zips, start = 1):        
+            # First check if we need to fetch this state
+            state_obj = us.states.lookup(fips_code)
+            state_name = getattr(state_obj, 'name')
+            
+            if not os.path.exists(fpath):                    
+                print(f'Downloading {state_name} {geo} PUMS data {i} of {len(level_zips)}')                
+                bytes_data = get_with_progress(zurl)
+                assert isinstance(bytes_data, bytes), f'Expected bytes, got {type(bytes_data)}'
+                
+                with open(fpath, 'wb') as f:
+                    f.write(bytes_data)
+                
+                # Pass the bytes data to pandas
+                fpath = BytesIO(bytes_data)
+            else:
+                print(f'Loading cached {state_name} {geo} PUMS data {i} of {len(level_zips)}')
+            
+            with zipfile.ZipFile(fpath, 'r') as zip_ref:
+                for file in zip_ref.namelist():
+                    if file.endswith('.csv'):
+                        assert isinstance(usecols, list), f'Expected list, got {type(usecols)}'                            
+                        df = pd.read_csv(zip_ref.open(file), usecols=usecols, low_memory=False)
+                if df is None:    
+                    raise ValueError(f'Expected .csv file, got {zip_ref.namelist()}')            
+                        
+            # Fill NA values with 995 and enforce data types
+            df = df.fillna(995).astype(fields)
+            
+            new_data.append(df)
+                    
+        if len(new_data) > 1:
+            df = pd.concat(new_data, axis=0)
+            df.to_parquet(path=pq_path)        
+
+        data_dict[geo] = df
+    
+    return data_dict
+
+def fetch(data_type: str = 'ACS') -> dict:
+    """
+    Fetches data from the Census FTP server.
+
+    Args:
+        data_type (str): The data type to fetch. Must be one of 'ACS' or 'PUMS'.
+        year (int): The year to fetch data for.
+
+    Returns:
+        pd.DataFrame: The data.
+    """    
+    pums_source = settings.PUMS_SOURCE
+    
+    assert data_type.upper() in ['ACS', 'PUMS'], f'Expected data_type to be one of "ACS" or "PUMS", got {data_type}'
+    assert pums_source.lower() in ['ftp', 'api'], f'Expected pum_source to be one of "ftp" or "api", got {pums_source}'
+    
+    if data_type == 'PUMS':
+        if pums_source == 'ftp':
+            data = fetch_pums_from_ftp(settings.YEAR)
+        else:    
+            data = fetch_from_api(data_type)
+    else:
+        data = fetch_from_api(data_type)
+    
+    return data
+
+
 if __name__ == '__main__':
-    # Fetch the data and attach to the module
-    ACS_DATA = fetch('ACS')
+    # Fetch the data and attach to the module    
     PUMS_DATA = fetch('PUMS')
+    ACS_DATA = fetch('ACS')

@@ -5,8 +5,7 @@ import pandas as pd
 import settings
 from us import states
 from io import BytesIO
-from bs4 import BeautifulSoup
-from utils import get_with_progress
+from utils import get_with_progress, parse_census_ftp
 
 
 def fetch(geo: str, year: int = settings.YEAR) -> gpd.GeoDataFrame:
@@ -19,40 +18,14 @@ def fetch(geo: str, year: int = settings.YEAR) -> gpd.GeoDataFrame:
 
     Returns:
         gpd.GeoDataFrame: The geography data.
-    """
+    """    
     
-    
-    assert isinstance(geo, str), f'Expected str, got {type(geo)}'
+    assert isinstance(geo, str), f'Expected str, got {type(geo)}'    
     
     url = f'https://www2.census.gov/geo/tiger/TIGER{year}/{geo}/'
+    zips = parse_census_ftp(url, cache_dir=os.path.join(settings.RAW_DATA_DIR, 'shp'), data_type='geography')
     
-    def check_soup(node):
-        href = node.get('href')
-        try:            
-            is_zip = href.endswith('.zip')
-            is_state = os.path.splitext(href)[0].split('_')[2] in settings.FIPS        
-        except:
-            return False
-            
-        if is_zip and is_state:
-            return True
-    
-    def parse_soup(node):
-        href = node.get('href')
-        
-        dlurl = url + '/' + href   
-        fips = os.path.splitext(href)[0].split('_')[2]
-        fpath = os.path.join(settings.RAW_DATA_DIR, 'shp', href)
-        
-        return fips, fpath, dlurl
-
-
-    # Connect to the FTP server
-    response = requests.get(url)
-    
-    # Get file URLs
-    soup = BeautifulSoup(response.text, 'html.parser')
-    zips = [parse_soup(node) for node in soup.find_all('a') if check_soup(node)]  
+    assert isinstance(zips, list), f'Expected list, got {type(zips)}'
     
     if not os.path.exists(os.path.join(settings.RAW_DATA_DIR, 'shp')):
         os.mkdir(os.path.join(settings.RAW_DATA_DIR, 'shp'))
@@ -75,15 +48,14 @@ def fetch(geo: str, year: int = settings.YEAR) -> gpd.GeoDataFrame:
         state_list = []  
      
     new_data = [geo_df]
-    for fips_code, fpath, zurl in zips:        
+    for i, (fips_code, fpath, zurl, level) in enumerate(zips, start = 1):        
         # First check if we need to fetch this state
         if fips_code in settings.FIPS and fips_code not in state_list:
             state_obj = states.lookup(fips_code)
             state_name = getattr(state_obj, 'name')
             
             if not os.path.exists(fpath):
-                
-                print(f'Downloading {state_name} {geo} geography data')                
+                print(f'Downloading {state_name} {geo} geography data {i} of {len(zips)}')          
                 bytes_data = get_with_progress(zurl)
                 assert isinstance(bytes_data, bytes), f'Expected bytes, got {type(bytes_data)}'
                 
@@ -92,7 +64,7 @@ def fetch(geo: str, year: int = settings.YEAR) -> gpd.GeoDataFrame:
                     
                 df = gpd.read_file(BytesIO(bytes_data))
             else:
-                print(f'Loading cached {state_name} {geo} geography data')
+                print(f'Loading cached {state_name} {geo} geography data {i} of {len(zips)}')
                 df = gpd.read_file(fpath)
                 
             new_data.append(df)
