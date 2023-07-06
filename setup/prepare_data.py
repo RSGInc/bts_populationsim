@@ -30,6 +30,8 @@ PUMS_DATA_FINAL = {}
 XWALK_FINAL = pd.DataFrame()
   
 def create_seeds(replace=REPLACE):
+    global PUMS_DATA_FINAL
+    
     print('#### Creating seed files... ####')
     
     if not replace and all([os.path.exists(path) for path in PUMS_DATA_PATHS.values()]):  
@@ -75,6 +77,8 @@ def create_seeds(replace=REPLACE):
     return
 
 def create_acs_targets(replace=REPLACE):
+    global ACS_DATA_FINAL
+    
     print('#### Creating ACS targets... ####')
         
     if not replace and all([os.path.exists(path) for path in ACS_DATA_PATHS.values()]):
@@ -97,6 +101,7 @@ def create_acs_targets(replace=REPLACE):
         
     # Update GEOIDs and save results as targets
     for geo, df in acs_data.items():
+        print(f'Formatting {geo} targets...')
         # Rename any specific columns
         renamer = dict(zip(df.columns, df.columns.str.upper()))
         for old_name, new_name in renamer.items():
@@ -112,6 +117,7 @@ def create_acs_targets(replace=REPLACE):
     return
   
 def create_crosswalk(replace=REPLACE):
+    global XWALK_FINAL
     
     print('#### Creating crosswalk... ####')
     
@@ -153,6 +159,7 @@ def create_crosswalk(replace=REPLACE):
         
         # Approximate degrees to meters conversion
         if distances[nearest]*111139 < 1000:
+            print(f'Found a PUMA within {distances[nearest]*111139}m for {row.Index}! Joining...')
             xwalk.loc[row.Index, 'index_right'] = nearest
         else:
             print(f'Could not find a PUMA within 1km for {row.Index}! Dropping...')
@@ -187,12 +194,12 @@ def create_crosswalk(replace=REPLACE):
         df = df.rename(columns=renamer)
         
         # Format geoids
-        df = format_geoids(df)
+        df = format_geoids(df, verbose=False)
         
         # Remove any missing geographies
-        is_in = XWALK_FINAL[geo].isin(df[geo])
-        if is_in.any():
-            print(f'Removing {sum(~is_in)} {geo} from crosswalk with missing data ...')
+        is_in = XWALK_FINAL[geo].isin(df[geo].unique())
+        
+        print(f'Removing {sum(~is_in)} {geo} from crosswalk with missing data...')
         XWALK_FINAL = XWALK_FINAL[is_in]
             
     return
@@ -202,7 +209,7 @@ def save_inputs(replace=REPLACE):
     if len(PUMS_DATA_FINAL) > 0 and replace:
         for level, path in PUMS_DATA_PATHS.items():
             print(f'Saving {level} PUMS data...')
-            PUMS_DATA_FINAL[level].to_csv(path, index=False)
+            PUMS_DATA_FINAL[level].to_csv(path, index=True)
 
     if len(ACS_DATA_FINAL) > 0 and replace:
         for geo, path in ACS_DATA_PATHS.items():

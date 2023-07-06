@@ -27,7 +27,7 @@ models:
   - write_tables
 
 #resume_after: integerize_final_seed_weights
-resume_after: setup_data_structures
+resume_after: 
 
 multiprocess_steps:
   - name: mp_seed_balancing

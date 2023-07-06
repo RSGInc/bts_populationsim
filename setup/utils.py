@@ -11,7 +11,7 @@ import os
 import us
 
 
-def format_geoids(df: pd.DataFrame) -> pd.DataFrame:
+def format_geoids(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
     """
     This function formats the geoids in a DataFrame to the correct length and format.
     This is done using integer summation rather than string concatenation for performance over large dataframe.
@@ -25,7 +25,8 @@ def format_geoids(df: pd.DataFrame) -> pd.DataFrame:
     
     for geoid, digits in settings.GEOID_LEN.items():
         if geoid in df.columns:
-            print(f'Formatting {geoid} GEOID field')
+            if verbose:
+                print(f'Formatting {geoid} GEOID field')
             
             # Ensure that the geoid is an integer
             if df[geoid].dtype != 'int64' or df[geoid].dtype != 'int32':
