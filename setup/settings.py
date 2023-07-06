@@ -52,14 +52,15 @@ PUMS_FIELDS = {
     }
 }
 
-PUMS_RENAME = {
+RENAME = {
     'ST': 'STATE',
+    'BLOCK GROUP': 'BG',
 }
 
 # Inferred constants
 CENSUS_API_KEY = os.getenv('CENSUS_API_KEY')
 STATES = STATES if isinstance(STATES, list) else [STATES]
-FIPS = fips_list = [getattr(states.lookup(x), 'fips') for x in STATES] 
+FIPS = [getattr(states.lookup(x), 'fips') for x in STATES] 
 
 ACS_AGGREGATOR = pd.read_csv(os.path.join(SETUP_DIR, 'controls_aggregator.csv'))
 PUMS_AGGREGATOR = pd.read_csv(os.path.join(POPSIM_DIR, 'configs/controls.csv'))

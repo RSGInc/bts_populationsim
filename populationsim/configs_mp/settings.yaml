@@ -1,7 +1,7 @@
 inherit_settings: True
 
 multiprocess: True
-num_processes: 6
+num_processes: 4
 cleanup_pipeline_after_run: True
 
 slice_geography: STATE
@@ -27,7 +27,7 @@ models:
   - write_tables
 
 #resume_after: integerize_final_seed_weights
-resume_after:
+resume_after: setup_data_structures
 
 multiprocess_steps:
   - name: mp_seed_balancing
