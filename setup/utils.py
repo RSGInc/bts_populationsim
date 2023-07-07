@@ -11,7 +11,7 @@ import os
 import us
 
 
-def format_geoids(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
+def format_geoids(target_df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
     """
     This function formats the geoids in a DataFrame to the correct length and format.
     This is done using integer summation rather than string concatenation for performance over large dataframe.
@@ -22,6 +22,17 @@ def format_geoids(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
     Returns:
         pd.DataFrame: the formatted DataFrame
     """
+    
+    cols = list(set(target_df.columns).intersection(settings.GEOID_LEN.keys()))
+    
+    assert len(cols) > 0, 'No geoid columns found in the DataFrame'
+    assert isinstance(target_df, pd.DataFrame), 'Input is not a DataFrame'
+    assert isinstance(cols, list), 'Input is not a set'
+    
+    df = target_df[cols]
+    
+    # Can use this to debug column formatting
+    # df[[x + '_old' for x in cols]] = df[cols]
     
     for geoid, digits in settings.GEOID_LEN.items():
         if geoid in df.columns:
@@ -37,21 +48,27 @@ def format_geoids(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
             
             # Concatenate the geoid parts ensuring that only the appropriate last n-digits are used
             new_id = 0
+            full_digits = sum([settings.GEOID_LEN[x] for x in settings.GEOID_STRUCTURE[geoid]])            
             for i, part_col in enumerate(settings.GEOID_STRUCTURE[geoid]):
                 part_digits = settings.GEOID_LEN[part_col]
+                full_digits += part_digits
                 
                 assert df[part_col].isna().sum() == 0, f'Geoid part {part_col} has missing values'
                 
                 part = df[part_col] % (10 ** part_digits)
-                if i > 0:
-                    new_id *= (10 ** digits)
+                
+                # If not the first GEOID part (i.e., state), need to add trailing zeroes for the part to be added
+                if i > 0:                    
+                    new_id *= (10 ** part_digits)
 
                 new_id += part                
             
             # Send the new geoid back to the DataFrame
             df[geoid] = new_id
 
-    return df              
+    target_df.update(df)
+    
+    return target_df              
 
 def get_with_progress(url: str) -> bytes:
     """

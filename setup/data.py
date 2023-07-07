@@ -233,7 +233,6 @@ def fetch_from_api(data_type: str) -> dict:
         
     return data_dict
 
-
 def fetch_pums_from_ftp(year: int = settings.YEAR) -> dict:
     """
     Fetches geography files from the Census FTP server.
@@ -345,7 +344,8 @@ def fetch(data_type: str = 'ACS') -> dict:
 
     Returns:
         pd.DataFrame: The data.
-    """    
+    """
+    
     pums_source = settings.PUMS_SOURCE
     
     assert data_type.upper() in ['ACS', 'PUMS'], f'Expected data_type to be one of "ACS" or "PUMS", got {data_type}'

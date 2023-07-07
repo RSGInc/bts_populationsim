@@ -13,7 +13,7 @@ REPLACE = True
 
 # Whole data set
 ACS_DATA = data.fetch('ACS')
-PUMS_DATA = data.fetch('PUMS')     
+PUMS_DATA = data.fetch('PUMS')
 GEO_PUMA = geographies.fetch('PUMA')
 GEO_BG = geographies.fetch('BG')
 
@@ -71,6 +71,9 @@ def create_seeds(replace=REPLACE):
     pums_hh.NP_ADULTS.fillna(0, inplace=True)
     pums_hh.NP_ADULTS = pums_hh.NP_ADULTS.astype(int)    
     
+    # Assert that index is consistent
+    assert len(pums_hh) == pums_hh.index.nunique(), 'Index is not unique for HH!'
+    
     PUMS_DATA_FINAL['HH'] = pums_hh
     PUMS_DATA_FINAL['PER'] = pums_per
     
@@ -83,7 +86,7 @@ def create_acs_targets(replace=REPLACE):
         
     if not replace and all([os.path.exists(path) for path in ACS_DATA_PATHS.values()]):
         print('ACS targets already exist, skipping...')
-        return    
+        return
         
     # Select the states
     acs_data_select = {geo: df[df.state.isin(settings.FIPS)].copy() for geo, df in ACS_DATA.items()}    
@@ -111,7 +114,10 @@ def create_acs_targets(replace=REPLACE):
         # Format GEOIDs        
         df = format_geoids(df)
         df['REGION'] = 1
-                
+        
+        # Assert that index is consistent
+        assert len(df.index) == df[geo].nunique(), f'Index is not unique for {geo}!'
+        
         ACS_DATA_FINAL[geo] = df         
         
     return
@@ -150,7 +156,7 @@ def create_crosswalk(replace=REPLACE):
         
     # Find any unmatched block groups and joint by distance, if possible
     orphans = bg[xwalk.index_right.isna().values]
-    print(f'Found {orphans.size} any unmatched block groups and joining by distance (<1km)...')
+    print(f'Found {orphans.shape[0]} any unmatched block groups and joining by distance (<1km)...')
     for row in orphans.itertuples():
         # Find the nearest PUMA within the state
         state_pumas = puma.loc[puma.STATEFP == row.STATEFP]
