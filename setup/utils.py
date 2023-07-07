@@ -29,7 +29,7 @@ def format_geoids(target_df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame
     assert isinstance(target_df, pd.DataFrame), 'Input is not a DataFrame'
     assert isinstance(cols, list), 'Input is not a set'
     
-    df = target_df[cols]
+    df = target_df[cols].copy()
     
     # Can use this to debug column formatting
     # df[[x + '_old' for x in cols]] = df[cols]
