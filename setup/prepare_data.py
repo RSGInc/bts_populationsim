@@ -216,19 +216,28 @@ def save_inputs(replace=REPLACE):
         for level, path in PUMS_DATA_PATHS.items():
             print(f'Saving {level} PUMS data...')
             PUMS_DATA_FINAL[level].to_csv(path, index=True)
+    else:
+        print('No PUMS data to save!')
 
     if len(ACS_DATA_FINAL) > 0 and replace:
         for geo, path in ACS_DATA_PATHS.items():
             print(f'Saving {geo} ACS data...')
             ACS_DATA_FINAL[geo].to_csv(path, index=False)
+    else:
+        print('No ACS data to save!')
         
     if not XWALK_FINAL.empty and replace:
         print('Saving crosswalk...')
         XWALK_FINAL.to_csv(XWALK_PATH, index=False)
+    else:
+        print('No crosswalk to save!')
 
-if __name__ == '__main__':
+def main():
     print(f'#### Creating POPSIM inputs for {len(settings.STATES)} States: ####\n{settings.STATES}')
     create_seeds()
     create_acs_targets()
     create_crosswalk()
     save_inputs()
+
+if __name__ == '__main__':
+    main()
