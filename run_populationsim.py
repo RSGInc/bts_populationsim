@@ -32,6 +32,7 @@ def log_settings():
         'USE_SIMUL_INTEGERIZER'
     ]
 
+BATCH_SIZE = 4
 
 if __name__ == '__main__':
 
@@ -50,46 +51,40 @@ if __name__ == '__main__':
     if 'populationsim/configs_mp' in args.config:
         args.output += '_mp'    
         
-    if settings.RUN_INDIVIDUALLY:
-        DataCreator = prepare_data.CreateInputData(replace=False, verbose=False)
         
-        args_dict = {}
-        for states_chunk in utils.batched(settings.STATES, 4):        
-        # for state, fips in zip(settings.STATES, settings.FIPS):
-            fips = [getattr(states.lookup(s), 'fips') for s in states_chunk]
-            state_str = '-'.join(states_chunk)
-            
-            new_args = {
-                'data': os.path.join(args.data, state_str), 
-                'output': os.path.join(args.output, state_str)
-            }
-            args_dict[state_str] = new_args
-            
-            if not os.path.exists(new_args['data']):
-                os.makedirs(new_args['data'], exist_ok=True)
-            if not os.path.exists(new_args['output']):
-                os.makedirs(new_args['output'], exist_ok=True)
-            
-            DataCreator.create_inputs(
-                FIPS=fips,
-                STATES=list(states_chunk)
-                )
+    DataCreator = prepare_data.CreateInputData(replace=False, verbose=False)
+    
+    args_dict = {}
+    for states_chunk in utils.batched(settings.STATES, BATCH_SIZE):
+        fips = [getattr(states.lookup(s), 'fips') for s in states_chunk]
+        state_str = '-'.join(states_chunk)
         
-        # Free up memory
-        del DataCreator
+        new_args = {
+            'data': os.path.join(args.data, state_str), 
+            'output': os.path.join(args.output, state_str)
+        }
+        args_dict[state_str] = new_args
         
-        for state, kwargs in args_dict.items():
-            args.data = kwargs['data']
-            args.output = kwargs['output']
+        if not os.path.exists(new_args['data']):
+            os.makedirs(new_args['data'], exist_ok=True)
+        if not os.path.exists(new_args['output']):
+            os.makedirs(new_args['output'], exist_ok=True)
         
-            try:
-                print(f'Running PopulationSim for {state}...')
-                sys.exit(run(args))
-            except:
-                print(f'Error running {state}, continuing...')
-    else:
-        DataCreator = prepare_data.CreateInputData(replace=False, verbose=True)
-        DataCreator.create_inputs()
-        del DataCreator           
-        
-        sys.exit(run(args))
+        DataCreator.create_inputs(
+            FIPS=fips,
+            STATES=list(states_chunk)
+            )
+    
+    # Free up memory
+    del DataCreator
+    
+    for state, kwargs in args_dict.items():
+        args.data = kwargs['data']
+        args.output = kwargs['output']
+    
+        try:
+            print(f'#### Running PopulationSim for {state}... ####')
+            sys.exit(run(args))
+        except:
+            print(f'Error running {state}, continuing...')
+            continue
