@@ -3,7 +3,9 @@
 
 ## Setup environment
 
-I created a environment setup batch script to create a conda environment. You can use whatever preferred Python environment management system, but I will demonstrate using Mamba, a faster conda alternative.
+I created a environment setup batch script to create a conda environment. This will essentiall run the following steps:
+
+You can use whatever preferred Python environment management system, but I will demonstrate using Mamba, a faster conda alternative.
 
 1. After cloning this repository, clone the `populationsim` and `activitysim` source code into the `./src` folder. The `./src` folder is ignored by git, so you can put anything you want in there. I like to keep all my source code in one place:
 <br>
@@ -11,10 +13,10 @@ I created a environment setup batch script to create a conda environment. You ca
 <br><br>
 I found that the latest version of activitysim had a sharrow-related bug that affects multiprocessing, so you may want clone an older release:
 <br>
-```git clone -b v1.2.0 https://github.com/ActivitySim/activitysim.git ./src/activitysim```
+```git clone -b v1.2.0 https://github.com/ActivitySim/activitysim.git@v1.2.1 ./src/activitysim```
 
 2. Create the mamba environment from the environment yaml recipe:
-```mamba env create --file bts_populationsim_env.yml```
+```mamba env create --file bts_env.yml```
 <br><br>
 This will create an environment and install an editable version of populationsim and activitysim as well as any supporting packages. Editable means that any changes in the `./src/populationsim` folder are reflected in the environment. This makes debugging easier and allows you to make changes to the source code without having to reinstall the package.
 

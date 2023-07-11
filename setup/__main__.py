@@ -1,3 +1,4 @@
-import prepare_data
+from setup import prepare_data
 
-prepare_data.main()
+if __name__ == '__main__':
+    prepare_data.create_inputs()

@@ -2,7 +2,8 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 from us import states
-import settings_helper
+
+from setup.settings_helpers import aggregate_acs_fields
 
 # Load .env file
 load_dotenv()
@@ -17,6 +18,8 @@ RAW_DATA_DIR = os.path.join(SETUP_DIR, 'raw')
 # STATES = ['CA', 'NY', 'TX', 'WA']
 STATES = [x.abbr for x in states.STATES]
 ACS_TYPE = 'acs5'
+
+RUN_INDIVIDUALLY = True
 
 """
 You must define the PUMS fields you want to use for households and persons,
@@ -66,7 +69,7 @@ ACS_AGGREGATOR = pd.read_csv(os.path.join(SETUP_DIR, 'controls_aggregator.csv'))
 PUMS_AGGREGATOR = pd.read_csv(os.path.join(POPSIM_DIR, 'configs/controls.csv'))
 
 # Extract fields from aggregators
-ACS_AGGREGATION, ACS_GEO_FIELDS, CONTROL_FIELDS, ACS_TABLES = settings_helper.aggregate_acs_fields(ACS_AGGREGATOR)
+ACS_AGGREGATION, ACS_GEO_FIELDS, CONTROL_FIELDS, ACS_TABLES = aggregate_acs_fields(ACS_AGGREGATOR)
 
 # Control fields must match!
 assert set(CONTROL_FIELDS) == set(PUMS_AGGREGATOR.control_field),\

@@ -1,12 +1,11 @@
-import requests
 import os
 import geopandas as gpd
 import pandas as pd
-import settings
 from us import states
 from io import BytesIO
-from utils import get_with_progress, parse_census_ftp
 
+from setup.utils import get_with_progress, parse_census_ftp
+from setup import settings
 
 def fetch(geo: str, year: int = settings.YEAR) -> gpd.GeoDataFrame:
     """

@@ -1,0 +1,21 @@
+name: bts_pop
+channels:
+  - conda-forge
+  - defaults
+  
+dependencies:
+  - python>=3.10
+  - tqdm
+  - geopandas
+  - python-dotenv
+  - bs4
+  - pip
+  - pip:
+    - us
+    - pypums
+    - census
+    - "--editable git+https://github.com/ActivitySim/activitysim.git@v1.1.3#egg=activitysim ./src/activitysim"
+    - "--editable git+https://github.com/nick-fournier-rsg/populationsim#egg=populationsim ./src/populationsim"
+    # - "--editable ./src/activitysim"
+    # - "--editable ./src/populationsim"
+    

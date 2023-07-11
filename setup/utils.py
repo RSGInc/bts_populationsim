@@ -4,12 +4,12 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 import json
 from tqdm import tqdm
-import settings
 from itertools import islice
 from bs4 import BeautifulSoup
 import os
 import us
 
+from setup import settings
 
 def format_geoids(target_df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
     """
