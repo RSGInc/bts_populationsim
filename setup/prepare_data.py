@@ -73,7 +73,7 @@ class CreateInputData:
         
         # Select the states
         fips_int = [int(x) for x in self.FIPS]
-        pums_select = {geo: df[df.ST.isin(fips_int)] for geo, df in self.PUMS_DATA.items()}   
+        pums_select = {geo: df[df.ST.isin(fips_int)].copy() for geo, df in self.PUMS_DATA.items()}   
         
         # Join together to ensure that the same households are selected
         print('Joining HH and PER PUMS data for aggregation...')
@@ -154,11 +154,16 @@ class CreateInputData:
         print('#### Creating crosswalk... ####')
                     
         # Select the states
+        
         puma_select = self.GEO_PUMA[self.GEO_PUMA.STATEFP.isin(self.FIPS)]
-        bg_select = self.GEO_BG[self.GEO_BG.STATEFP.isin(self.FIPS)]    
-
+        bg_select = self.GEO_BG[self.GEO_BG.STATEFP.isin(self.FIPS)]
+        
         assert isinstance(puma_select, gpd.GeoDataFrame), 'PUMA data is not a GeoDataFrame!'
         assert isinstance(bg_select, gpd.GeoDataFrame), 'BG data is not a GeoDataFrame!'
+        
+        # Local copy to avoid corrupting original data
+        puma_select = puma_select.copy()
+        bg_select = bg_select.copy()
             
         # Perform a spatial join on the PUMA and BG geometries to create a xwalk
         puma = puma_select.set_index('GEOID')

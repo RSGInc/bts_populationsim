@@ -4,7 +4,7 @@ multiprocess: True
 num_processes: 4
 cleanup_pipeline_after_run: True
 
-slice_geography: STATE
+slice_geography: TRACT
 
 # Steps for base mode
 # ------------------------------------------------------------------
@@ -15,9 +15,9 @@ models:
   - initial_seed_balancing
   - meta_control_factoring
   - final_seed_balancing
-  - integerize_final_seed_weights
-  ### mp_sub_balancing_BG step
+  - integerize_final_seed_weights  
   - sub_balancing.geography=TRACT
+  ### mp_sub_balancing_BG step
   - sub_balancing.geography=BG
   ### mp_summarize step
   - expand_households
@@ -26,14 +26,14 @@ models:
   - write_data_dictionary
   - write_tables
 
-# resume_after: integerize_final_seed_weights
-resume_after: 
+resume_after: integerize_final_seed_weights
+# resume_after: 
 
 multiprocess_steps:
   - name: mp_seed_balancing
     begin: input_pre_processor
   - name: mp_sub_balancing
-    begin: sub_balancing.geography=TRACT
+    begin: sub_balancing.geography=BG
     num_processes: 4
     slice:
       tables:

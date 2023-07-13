@@ -32,7 +32,8 @@ def log_settings():
         'USE_SIMUL_INTEGERIZER'
     ]
 
-BATCH_SIZE = 4
+BATCH_SIZE = 1
+CHECK_INPUTS = False
 
 if __name__ == '__main__':
 
@@ -51,11 +52,15 @@ if __name__ == '__main__':
     if 'populationsim/configs_mp' in args.config:
         args.output += '_mp'    
         
-        
-    DataCreator = prepare_data.CreateInputData(replace=False, verbose=False)
+    if CHECK_INPUTS:
+        DataCreator = prepare_data.CreateInputData(replace=False, verbose=False)
+    else:
+        DataCreator = None
     
     args_dict = {}
     for states_chunk in utils.batched(settings.STATES, BATCH_SIZE):
+        # states_chunk = ['VT']
+        
         fips = [getattr(states.lookup(s), 'fips') for s in states_chunk]
         state_str = '-'.join(states_chunk)
         
@@ -70,10 +75,11 @@ if __name__ == '__main__':
         if not os.path.exists(new_args['output']):
             os.makedirs(new_args['output'], exist_ok=True)
         
-        DataCreator.create_inputs(
-            FIPS=fips,
-            STATES=list(states_chunk)
-            )
+        if DataCreator:
+            DataCreator.create_inputs(
+                FIPS=fips,
+                STATES=list(states_chunk)
+                )
     
     # Free up memory
     del DataCreator
@@ -81,10 +87,13 @@ if __name__ == '__main__':
     for state, kwargs in args_dict.items():
         args.data = kwargs['data']
         args.output = kwargs['output']
-    
-        try:
-            print(f'#### Running PopulationSim for {state}... ####')
-            sys.exit(run(args))
+        
+        try:                
+            if not os.path.exists(os.path.join(args.output, 'final_expanded_household_ids.csv')):        
+                print(f'#### Running PopulationSim for {state}... ####')
+                sys.exit(run(args))
+            else:
+                print(f'#### {state} already run, skipping... ####')
         except:
-            print(f'Error running {state}, continuing...')
+            print(f'Error running {state}, skipping...')
             continue
