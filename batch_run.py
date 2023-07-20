@@ -35,7 +35,7 @@ if __name__ == '__main__':
     
     DataCreator = None
 
-    settings.STATES = ['IA' ,'DE']
+    # settings.STATES = ['IA' ,'DE']
     for states_chunk in utils.batched(settings.STATES, BATCH_SIZE):
         
         if len(states_chunk) > 12:
