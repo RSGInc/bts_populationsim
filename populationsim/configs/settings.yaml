@@ -22,7 +22,7 @@ seed_geography: PUMA
 # Tracing
 # ------------------------------------------------------------------
 trace_geography:
-  BG: 06
+  TRACT: 9009150200
 
   
 # Data Directory
@@ -94,7 +94,6 @@ output_tables:
   tables:
     - summary_BG
     - summary_TRACT
-    - summary_STATE
     - summary_BG_PUMA
     - expanded_household_ids
 
@@ -125,8 +124,6 @@ output_synthetic_population:
       - SCH
       - SCHG
       - ESR
-      - OSUTAG
-      - OCCP
 
 
 # Model steps for base mode
