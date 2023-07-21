@@ -14,6 +14,14 @@ parser.add_argument('--config', type=str)
 parser.add_argument('--data', type=str)
 parser.add_argument('--output', type=str)
 
+
+def cleanup_output(output_dir):
+    for x in os.listdir(output_dir):
+        if x.endswith('.h5'):
+            print('Removing extra pipeline file')
+            os.remove(f"{output_dir}/{x}")
+
+
 if __name__ == '__main__':
     
     base_args = parser.parse_args()       
@@ -84,9 +92,12 @@ if __name__ == '__main__':
                         command.append(subarg)             
                                                 
                 subprocess.call(command)
+                cleanup_output(args.output)
 
             else:
                 print(f'#### {state_str} already run, skipping... ####')
+                cleanup_output(args.output)
+                
         except:
             print(f'Error running {state_str}, skipping...')
             continue
