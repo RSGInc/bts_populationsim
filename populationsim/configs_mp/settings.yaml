@@ -1,7 +1,7 @@
 inherit_settings: True
 
 multiprocess: True
-num_processes: 7
+num_processes: 3
 cleanup_pipeline_after_run: True
 
 slice_geography: TRACT
@@ -34,8 +34,9 @@ multiprocess_steps:
   - name: mp_setup
     begin: input_pre_processor
   - name: mp_seed_balancing
-    begin: sub_balancing.geography=TRACT
-    num_processes: 7
+    # begin: sub_balancing.geography=TRACT
+    begin: initial_seed_balancing
+    num_processes: 3
     slice:
       tables:
         - slice_crosswalk

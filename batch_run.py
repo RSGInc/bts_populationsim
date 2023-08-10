@@ -43,15 +43,17 @@ if __name__ == '__main__':
     
     DataCreator = None
 
-    # settings.STATES = ['IA' ,'DE']
+    settings.STATES = ['AK'] # Debugging
     for states_chunk in utils.batched(settings.STATES, BATCH_SIZE):
         
         if len(states_chunk) > 12:
-            state_str = states_chunk[0] + '-' + states_chunk[-1]
-        else:
-            state_str = '-'.join(states_chunk)
+            state_str_range = states_chunk[0] + '-' + states_chunk[-1]            
+            state_str = f'{BATCH_SIZE}_states_{state_str_range}'
+            print(f'#### Batch run of PopulationSim for {BATCH_SIZE} states: {state_str_range}... ####')
             
-        print(f'#### Batch run of PopulationSim for {state_str}... ####')
+        else:
+            state_str = '-'.join(states_chunk)            
+            print(f'#### Batch run of PopulationSim for {state_str}... ####')           
 
         # Current args
         args = copy(base_args)
