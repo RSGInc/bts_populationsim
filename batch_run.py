@@ -6,8 +6,6 @@ from copy import copy
 from setup_inputs.prepare_data import CreateInputData
 from setup_inputs import settings, utils
 
-BATCH_SIZE = 1
-
 # Create a namespace object to hold our args
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str)
@@ -43,13 +41,13 @@ if __name__ == '__main__':
     
     DataCreator = None
 
-    settings.STATES = ['AK'] # Debugging
-    for states_chunk in utils.batched(settings.STATES, BATCH_SIZE):
+    # settings.STATES = ['AK'] # Debugging
+    for states_chunk in utils.batched(settings.STATES, settings.BATCH_SIZE):
         
         if len(states_chunk) > 12:
             state_str_range = states_chunk[0] + '-' + states_chunk[-1]            
-            state_str = f'{BATCH_SIZE}_states_{state_str_range}'
-            print(f'#### Batch run of PopulationSim for {BATCH_SIZE} states: {state_str_range}... ####')
+            state_str = f'{settings.BATCH_SIZE}_states_{state_str_range}'
+            print(f'#### Batch run of PopulationSim for {settings.BATCH_SIZE} states: {state_str_range}... ####')
             
         else:
             state_str = '-'.join(states_chunk)            

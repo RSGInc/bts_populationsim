@@ -21,7 +21,7 @@ RAW_DATA_DIR = os.path.join(SETUP_DIR, 'raw')
 # STATES = ['CA', 'NY', 'TX', 'WA']
 STATES = [x.abbr for x in states.STATES]
 ACS_TYPE = 'acs5'
-
+BATCH_SIZE = 50
 
 """
 You must define the PUMS fields you want to use for households and persons,
