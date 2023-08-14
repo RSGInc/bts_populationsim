@@ -254,13 +254,23 @@ class CreateInputData:
             df = df.rename(columns=renamer)
             
             # Format geoids
-            df = utils.format_geoids(df, verbose=self.verbose)
+            df = utils.format_geoids(df, verbose=self.verbose)      
             
+            # Find and remove any empty rows
+            sum_cols = list(set(df.columns) - set(xwalk_final.columns))            
+            df = df[df[sum_cols].sum(axis=1) != 0]
+                    
+            # Find mismatches using symmetric difference of sets
+            bad_geos = list(set(df[geo].astype(str)) - set(xwalk_final[geo].astype(str)))
+
             # Remove any missing geographies
-            is_in = xwalk_final[geo].isin(df[geo].unique())
+            removed = ', '.join(bad_geos)
             
-            print(f'Removing {sum(~is_in)} {geo} from crosswalk with missing data...')
-            xwalk_final = xwalk_final[is_in]
+            print(f'Removing {len(bad_geos)} {geo} from crosswalk with no data...')
+            print(f'Removed: {removed}')                                   
+            
+            # xwalk_final = xwalk_final[is_in]
+            xwalk_final = xwalk_final[~xwalk_final[geo].isin(bad_geos)]            
             
             # Check for duplicates -- There can be only one control geography per seed PUMA
             if geo.lower() == 'puma':
