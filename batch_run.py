@@ -61,8 +61,7 @@ if __name__ == '__main__':
         # Check for existing data if string matches regex list
         existing = False
         try:
-            regex = '(?:% s)' % '|'.join(expected_inputs)
-            found = [bool(re.search(regex, x)) for x in os.listdir(args.data)]
+            found = [any([bool(re.search(regex, x)) for x in os.listdir(args.data)]) for regex in expected_inputs]
             if found and all(found):
                 existing = True
         except:

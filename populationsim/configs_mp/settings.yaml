@@ -4,7 +4,7 @@ multiprocess: True
 num_processes: 3
 cleanup_pipeline_after_run: True
 
-slice_geography: TRACT
+slice_geography: PUMA
 fail_fast: True
 
 # Steps for base mode
@@ -27,7 +27,7 @@ models:
   - write_data_dictionary
   - write_tables
 
-# resume_after: integerize_final_seed_weights
+# resume_after: sub_balancing.geography=BG
 # resume_after: final_seed_balancing
 
 multiprocess_steps:
