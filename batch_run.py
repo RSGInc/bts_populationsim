@@ -41,7 +41,7 @@ if __name__ == '__main__':
     
     DataCreator = None
 
-    # settings.STATES = ['AK'] # Debugging
+    # settings.STATES = ['RI'] # Debugging
     for states_chunk in utils.batched(settings.STATES, settings.BATCH_SIZE):
         
         if len(states_chunk) > 12:
@@ -59,9 +59,12 @@ if __name__ == '__main__':
         args.output += f'/{state_str}'
         
         # Check for existing data if string matches regex list
+        existing = False
         try:
             regex = '(?:% s)' % '|'.join(expected_inputs)
-            existing = all([bool(re.search(regex, x)) for x in os.listdir(args.data)])
+            found = [bool(re.search(regex, x)) for x in os.listdir(args.data)]
+            if found and all(found):
+                existing = True
         except:
             existing = False
         
@@ -92,11 +95,11 @@ if __name__ == '__main__':
                         command.append(subarg)             
                                                 
                 subprocess.call(command)
-                cleanup_output(args.output)
+                # cleanup_output(args.output)
 
             else:
                 print(f'#### {state_str} already run, skipping... ####')
-                cleanup_output(args.output)
+                # cleanup_output(args.output)
                 
         except:
             print(f'Error running {state_str}, skipping...')
