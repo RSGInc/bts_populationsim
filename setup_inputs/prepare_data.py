@@ -257,9 +257,10 @@ class CreateInputData:
             df = utils.format_geoids(df, verbose=self.verbose)      
             
             # Find and remove any empty rows
-            sum_cols = list(set(df.columns) - set(xwalk_final.columns))            
+            # sum_cols = list(set(df.columns) - set(xwalk_final.columns))            
+            sum_cols = df.select_dtypes(include='number').columns
             df = df[df[sum_cols].sum(axis=1) != 0]
-                    
+            
             # Find mismatches using symmetric difference of sets
             bad_geos = [str(x) for x in set(df[geo]) - set(xwalk_final[geo])]
 
