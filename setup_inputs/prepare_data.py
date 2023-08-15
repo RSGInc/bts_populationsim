@@ -261,13 +261,13 @@ class CreateInputData:
             df = df[df[sum_cols].sum(axis=1) != 0]
                     
             # Find mismatches using symmetric difference of sets
-            bad_geos = list(set(df[geo].astype(str)) - set(xwalk_final[geo].astype(str)))
+            bad_geos = [str(x) for x in set(df[geo]) - set(xwalk_final[geo])]
 
             # Remove any missing geographies
-            removed = ', '.join(bad_geos)
+            # removed = ', '.join(bad_geos)
             
-            print(f'Removing {len(bad_geos)} {geo} from crosswalk with no data...')
-            print(f'Removed: {removed}')                                   
+            print(f'Removing {len(bad_geos)} {geo} from crosswalk with no data or irrelevant data...')
+            # print(f'Removed: {removed}')
             
             # xwalk_final = xwalk_final[is_in]
             xwalk_final = xwalk_final[~xwalk_final[geo].isin(bad_geos)]            
