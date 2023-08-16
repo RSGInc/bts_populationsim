@@ -34,14 +34,17 @@ if __name__ == '__main__':
     expected_inputs = [
         'scaled_control_totals_meta.csv', 
         'seed_households.csv',
-        'control_totals_.*.csv', 
+        # 'control_totals_.*.csv', 
+        'control_totals_BG.csv',
+        'control_totals_TRACT.csv',
+        'control_totals_STATE.csv',
         'geo_cross_walk.csv', 
         'seed_persons.csv', 
         ]
     
     DataCreator = None
 
-    # settings.STATES = ['RI'] # Debugging
+    settings.STATES = ['WY', 'AK'] # Debugging
     for states_chunk in utils.batched(settings.STATES, settings.BATCH_SIZE):
         
         if len(states_chunk) > 12:
@@ -59,16 +62,16 @@ if __name__ == '__main__':
         args.output += f'/{state_str}'
         
         # Check for existing data if string matches regex list
-        existing = False
+        existing_inputs = False
         try:
             found = [any([bool(re.search(regex, x)) for x in os.listdir(args.data)]) for regex in expected_inputs]
             if found and all(found):
-                existing = True
+                existing_inputs = True
         except:
-            existing = False
+            existing_inputs = False
         
         # If not existing, create data                
-        if not existing:
+        if not existing_inputs:
             if not DataCreator:
                 DataCreator = CreateInputData(replace=False, verbose=False)
 
@@ -79,8 +82,9 @@ if __name__ == '__main__':
         else:
             print(f'#### {state_str} data already exists... ####')
                  
-        try:          
-            if not os.path.exists(os.path.join(args.output, 'final_expanded_household_ids.csv')):  
+        try:            
+            existing_outputs = os.path.exists(os.path.join(args.output, 'final_expanded_household_ids.csv'))
+            if not existing_outputs:  
                 print(f'#### Running PopulationSim for {state_str}... ####')
                 
                 if not os.path.exists(args.output):

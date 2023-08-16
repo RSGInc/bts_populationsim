@@ -44,7 +44,8 @@ class CreateInputData:
             os.makedirs(data_dir, exist_ok=True)
         
         label_map = {'HH': 'households', 'PER': 'persons'}
-        self.ACS_DATA_PATHS = {geo: f'{data_dir}/control_totals_{geo}.csv' for geo in settings.ACS_GEO_FIELDS.keys()}
+        geo_list = list(settings.ACS_GEO_FIELDS.keys()) + ['STATE']
+        self.ACS_DATA_PATHS = {geo: f'{data_dir}/control_totals_{geo}.csv' for geo in geo_list}
         self.ACS_DATA_PATHS['REGION'] = f'{data_dir}/scaled_control_totals_meta.csv'
         self.PUMS_DATA_PATHS = {level: f'{data_dir}/seed_{label_map[level]}.csv' for level in settings.PUMS_FIELDS.keys()}
         self.XWALK_PATH = f'{data_dir}/geo_cross_walk.csv'
@@ -126,14 +127,21 @@ class CreateInputData:
         
         # Make a new copy to work with
         acs_data = acs_data_select.copy()
-        totals = {}
+        state_totals = {}
+        region_totals = {}
         for (geo, variable), fields in settings.ACS_AGGREGATION.items():
             acs_data[geo][variable] = acs_data_select[geo][fields].sum(axis=1)
             acs_data[geo].drop(columns=fields, inplace=True)
-            totals[variable] = acs_data[geo][variable].sum()       
+            region_totals[variable] = acs_data[geo][variable].sum()
+            state_totals[variable] = acs_data[geo].groupby('state')[variable].sum()
+            
+        
+        # Prepate state totals
+        self.ACS_DATA_FINAL['STATE'] = pd.DataFrame(state_totals)
+        self.ACS_DATA_FINAL['STATE'].index.name = 'STATE'
         
         # Prepare regional totals
-        self.ACS_DATA_FINAL['REGION'] = pd.DataFrame(totals, index=pd.Index([1], name='REGION'))
+        self.ACS_DATA_FINAL['REGION'] = pd.DataFrame(region_totals, index=pd.Index([1], name='REGION'))
             
         # Update GEOIDs and save results as targets
         for geo, df in acs_data.items():
@@ -163,6 +171,7 @@ class CreateInputData:
         puma_select = self.GEO_PUMA[self.GEO_PUMA.STATEFP.isin(self.FIPS)]
         bg_select = self.GEO_BG[self.GEO_BG.STATEFP.isin(self.FIPS)]
         tract_select = self.GEO_TRACT[self.GEO_TRACT.STATEFP.isin(self.FIPS)]
+        fips_int = [int(x) for x in self.FIPS]
         
         assert isinstance(puma_select, gpd.GeoDataFrame), 'PUMA data is not a GeoDataFrame!'
         assert isinstance(bg_select, gpd.GeoDataFrame), 'BG data is not a GeoDataFrame!'
@@ -255,6 +264,9 @@ class CreateInputData:
             
             # Format geoids
             df = utils.format_geoids(df, verbose=self.verbose)      
+            
+            # Grab just the relevant states data
+            df = df[df.STATE.isin(fips_int)]
             
             # Find and remove any empty rows
             # sum_cols = list(set(df.columns) - set(xwalk_final.columns))            
