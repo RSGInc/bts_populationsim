@@ -2,9 +2,9 @@ import pandas as pd
 import geopandas as gpd
 import os
 from us import states
-
 from setup_inputs import settings, utils, geographies, fetch
 
+ARC_METERS = 111139
 
 class CreateInputData:
     def __init__(self, replace: bool = True, verbose: bool = True) -> None:
@@ -166,12 +166,19 @@ class CreateInputData:
     def create_crosswalk(self):
         
         print('#### Creating crosswalk... ####')
-                    
-        # Select the states
-        puma_select = self.GEO_PUMA[self.GEO_PUMA.STATEFP.isin(self.FIPS)]
-        bg_select = self.GEO_BG[self.GEO_BG.STATEFP.isin(self.FIPS)]
-        tract_select = self.GEO_TRACT[self.GEO_TRACT.STATEFP.isin(self.FIPS)]
+
         fips_int = [int(x) for x in self.FIPS]
+        fips_str = self.FIPS
+        
+        xwalk_ls = []
+        # Loop through the states creating crosswalk then concatenate at end, this ensures PUMAS are not joined to wrong state
+        # for [fips_int] in self.FIPS:
+        # print(f'Creating crosswalk for {states.lookup(fips_int[0]).name}...')
+        
+        # Select the states
+        puma_select = self.GEO_PUMA[self.GEO_PUMA.STATEFP.isin(fips_str)]
+        bg_select = self.GEO_BG[self.GEO_BG.STATEFP.isin(fips_str)]
+        tract_select = self.GEO_TRACT[self.GEO_TRACT.STATEFP.isin(fips_str)]            
         
         assert isinstance(puma_select, gpd.GeoDataFrame), 'PUMA data is not a GeoDataFrame!'
         assert isinstance(bg_select, gpd.GeoDataFrame), 'BG data is not a GeoDataFrame!'
@@ -188,7 +195,7 @@ class CreateInputData:
             'tract': tract_select.set_index('GEOID'),
             'bg': bg_select.set_index('GEOID')[['STATEFP', 'COUNTYFP', 'TRACTCE', 'BLKGRPCE', 'NAMELSAD', 'geometry']],
         }
-  
+
         assert geoms['bg'].crs == geoms['tract'].crs == geoms['puma'].crs, 'CRS do not match!'
         
         # Using centroids to perform spatial join because it is faster and avoids ambiguous intersections
@@ -223,11 +230,11 @@ class CreateInputData:
                 nearest = distances.idxmin()
                 
                 # Approximate degrees to meters conversion
-                if distances[nearest]*111139 < 1000:
-                    print(f'Found a PUMA within {distances[nearest]*111139}m for {row.Index}! Joining...')
+                if distances[nearest]*ARC_METERS < 1000:
+                    print(f'Found a PUMA within {distances[nearest]*ARC_METERS}m for {geo} {row.Index}! Joining...')
                     xwalk.loc[row.Index, 'index_right'] = nearest
                 else:
-                    print(f'Could not find a PUMA within 1km for {row.Index}! Dropping...')
+                    print(f'Could not find a PUMA within 1km for {geo} {row.Index}! Dropping...')
                     xwalk.drop(row.Index, inplace=True)
             
             xwalks[geo] = xwalk
@@ -296,20 +303,35 @@ class CreateInputData:
                 print(f'Found {dupes.shape[0]} {geo} with multiple PUMAs! De-duping by distance...')
                 for zone_id in dupes.index:                                     
                     zone = centroids[geo.lower()].loc[str(zone_id).zfill(11)]
-                    distances = zone.geometry.distance(geoms['puma'].geometry)
-                    nearest = distances.idxmin()
                     
+                    # Make sure it's matching within the same State at least!
+                    puma_geoms = geoms['puma'][geoms['puma'].STATEFP == zone.STATEFP].geometry
+                    
+                    # Find distances and nearest puma
+                    distances = zone.geometry.distance(puma_geoms)
+                    nearest_puma = distances.idxmin()
+                    nearest_state = geoms['puma'].loc[nearest_puma].STATEFP
+                    
+                    assert zone.STATEFP == nearest_state, 'Nearest PUMA is not in the same state!'                    
+
                     # Approximate degrees to meters conversion
-                    if distances[nearest]*111139 < 1000:
-                        print(f'Found a PUMA within {distances[nearest]*111139}m for {zone_id}! Setting {geo} to that PUMA...')
-                        # xwalk_final.loc[(xwalk_final[geo] == zone_id)]
-                        xwalk_final.loc[(xwalk_final[geo] == zone_id), 'PUMA'] = int(nearest)
+                    if distances[nearest_puma]*111139 < 1000:
+                        print(f'Found a PUMA within {distances[nearest_puma]*111139}m for {geo} {zone_id}! Setting to PUMA {nearest_puma}...')
+                        xwalk_final.loc[(xwalk_final[geo] == zone_id)]
+                        xwalk_final.loc[(xwalk_final[geo] == zone_id), 'PUMA'] = int(nearest_puma)
                     else:
                         print(f'Could not find a PUMA within 1km for {zone_id}! Dropping...')
-                        drop_idx = xwalk_final.loc[(xwalk_final[geo] == zone_id) & (xwalk_final.PUMA != nearest)].index
+                        drop_idx = xwalk_final.loc[(xwalk_final[geo] == zone_id) & (xwalk_final.PUMA != nearest_puma)].index
                         xwalk_final.drop(drop_idx, inplace=True)         
         
+            # Add to list
+            # xwalk_ls.append(xwalk_final)
+        
+        # Concatenate all states
+        # self.XWALK_FINAL = pd.concat(xwalk_ls, ignore_index=True)
         self.XWALK_FINAL = xwalk_final
+        
+        self.XWALK_FINAL.groupby(['PUMA','STATE']).size()
         
         return
 
