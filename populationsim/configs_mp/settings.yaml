@@ -1,7 +1,7 @@
 inherit_settings: True
 
 multiprocess: True
-num_processes: 3
+num_processes: 30
 cleanup_pipeline_after_run: True
 
 slice_geography: STATE
@@ -35,7 +35,7 @@ multiprocess_steps:
   - name: mp_seed_balancing
     # begin: sub_balancing.geography=BG
     begin: initial_seed_balancing
-    num_processes: 3
+    num_processes: 30
     slice:
       tables:
         - slice_crosswalk
