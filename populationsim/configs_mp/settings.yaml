@@ -4,7 +4,7 @@ multiprocess: True
 num_processes: 3
 cleanup_pipeline_after_run: True
 
-slice_geography: PUMA
+slice_geography: STATE
 fail_fast: True
 
 # Steps for base mode
@@ -28,13 +28,12 @@ models:
   - write_tables
 
 # resume_after: sub_balancing.geography=BG
-# resume_after: final_seed_balancing
 
 multiprocess_steps:
   - name: mp_setup
     begin: input_pre_processor
   - name: mp_seed_balancing
-    # begin: sub_balancing.geography=TRACT
+    # begin: sub_balancing.geography=BG
     begin: initial_seed_balancing
     num_processes: 3
     slice:
@@ -45,6 +44,8 @@ multiprocess_steps:
       except: True
       # the following tables are added by sub_balancer and should be coalesced
       coalesce:
+        - TRACT_weights
+        - TRACT_weights_sparse
         - BG_weights
         - BG_weights_sparse
         - trace_BG_weights
