@@ -44,7 +44,7 @@ if __name__ == '__main__':
     
     DataCreator = None
 
-    settings.STATES = ['AZ', 'CA', 'KY'] # Debugging
+    # settings.STATES = ['AZ', 'CA', 'KY'] # Debugging
     for states_chunk in utils.batched(settings.STATES, settings.BATCH_SIZE):
         
         if len(states_chunk) > 12:
