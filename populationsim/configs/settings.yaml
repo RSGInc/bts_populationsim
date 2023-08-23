@@ -94,8 +94,14 @@ output_tables:
   tables:
     - summary_BG
     - summary_TRACT
-    - summary_BG_PUMA
+    - summary_BG_PUMA    
+    - summary_TRACT_PUMA
+    - summary_BG_STATE
+    - summary_TRACT_STATE
+    - summary_BG_REGION
+    - summary_TRACT_REGION
     - expanded_household_ids
+    - incidence_table
 
 
 # Synthetic Population Output Specification
