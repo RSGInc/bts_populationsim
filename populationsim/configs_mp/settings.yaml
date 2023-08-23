@@ -2,9 +2,9 @@ inherit_settings: True
 
 multiprocess: True
 num_processes: 30
-cleanup_pipeline_after_run: True
+cleanup_pipeline_after_run: False
 
-slice_geography: STATE
+slice_geography: PUMA
 fail_fast: True
 
 # Steps for base mode

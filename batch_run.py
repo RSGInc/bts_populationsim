@@ -1,3 +1,12 @@
+# Author: Nicholas Fournier
+#
+# This is a run script that prepares the input data if not already prepared, 
+# and then runs the PopulationSim model for a batch of states.
+#
+# It calls the run_populationsim.py script separately for each batch of states, 
+# otherwise importing the activitysim pipeline would get corrupted in the loop.
+
+
 import re
 import os
 import argparse
