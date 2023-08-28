@@ -17,8 +17,7 @@ POPSIM_DIR = os.path.join(Path(__file__).parent.parent.absolute(), 'populationsi
 SETUP_DIR = os.path.dirname(__file__)
 RAW_DATA_DIR = os.path.join(SETUP_DIR, 'raw')
 
-# STATES = ['VT','AK','ND', 'SD']#,'WY', 'RI', 'MT', 'UT']
-# STATES = ['CA', 'NY', 'TX', 'WA']
+# ACS data | This just will list all states
 STATES = [x.abbr for x in states.STATES]
 ACS_TYPE = 'acs5'
 BATCH_SIZE = 50
@@ -67,7 +66,7 @@ CENSUS_API_KEY = os.getenv('CENSUS_API_KEY')
 STATES = STATES if isinstance(STATES, list) else [STATES]
 FIPS = [getattr(states.lookup(x), 'fips') for x in STATES] 
 
-ACS_AGGREGATOR = pd.read_csv(os.path.join(SETUP_DIR, 'controls_aggregator.csv'))
+ACS_AGGREGATOR = pd.read_csv(os.path.join(POPSIM_DIR, 'configs/controls_aggregator.csv'))
 PUMS_AGGREGATOR = pd.read_csv(os.path.join(POPSIM_DIR, 'configs/controls.csv'))
 
 # Extract fields from aggregators
