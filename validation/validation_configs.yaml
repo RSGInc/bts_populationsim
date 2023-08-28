@@ -1,0 +1,11 @@
+
+GEOGRAPHIES: [REGION", "STATE", "PUMA", "TRACT", "BG"]
+PLOT_GEOGRAPHIES: ["REGION", "STATE", "PUMA", "TRACT", "BG"]
+SEED_GEOGRAPHY: PUMA
+
+CONFIG_DIRS: [populationsim\configs, populationsim\configs_mp]
+VALID_DIR: populationsim\validation
+DATA_DIR: populationsim\data\AK-WY
+OUTPUT_DIR: populationsim\output_mp\AK-WY
+
+

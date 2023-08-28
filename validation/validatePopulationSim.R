@@ -74,6 +74,7 @@
 
 popsim_dir       <- file.path(getwd(), "populationsim")
 validation_dir   <- file.path(popsim_dir, "validation")
+plot_dir         <- file.path(validation_dir, "plots/rplots")
 
 geography_list   <- c("REGION", "STATE", "PUMA", "TRACT", "BG")
 plot_geographies <- c("REGION", "STATE", "PUMA", "TRACT", "BG")
@@ -81,13 +82,13 @@ scenario = 'AK-WY'
 
 # geogXWalk       <- read.csv(paste(popsim_dir, "data/geo_crosswalks.csv", sep = "/"))
 # column_map       <- read.csv(paste(validation_dir, "column_mapPopSim_Dubai_em.csv", sep = "/"))
-column_map       <- read.csv(file.path(popsim_dir, "configs/controls.csv"))
+column_map       <- fread(file.path(popsim_dir, "configs/controls.csv"))
 
-seed_households <- read.csv(file.path(popsim_dir, "data", scenario, "seed_households.csv"))
-seed_col        <- c("household_id", "HH_WEIGHT")
+seed_households <- fread(file.path(popsim_dir, "data", scenario, "seed_households.csv"))
+seed_col        <- c("hh_id", "WGTP")
 
-expanded_hhid      <- read.csv(file.path(popsim_dir, "output_mp", scenario, "final_expanded_household_ids.csv"))
-expanded_hhid_col  <- c("household_id")
+expanded_hhid      <- fread(file.path(popsim_dir, "output_mp", scenario, "final_expanded_household_ids.csv"))
+expanded_hhid_col  <- c("hh_id")
 
 #   This is currently configured for 2 sub-seed geography
 #   User should add more read lines when more geographies is involved
@@ -224,11 +225,11 @@ proc_control <- function(map) {
       geom_vline(xintercept = c(0), colour = "steelblue") +
       labs(title = plot_title)
 
-    fname = file.path(validation_dir, "plots", paste(control_id, ".png", sep = ""))
+    fname = file.path(plot_dir, paste(control_id, ".png", sep = ""))
     ggsave(fname, plot = p1, width = 9, height = 6)
   }
   
-  cat("\n Processed Control: ", control_name) 
+  print("Processed Control: ", control_name) 
   return(stats)
 
 }
@@ -237,10 +238,9 @@ proc_control <- function(map) {
 dir.create(file.path(validation_dir, 'plots'), showWarnings = FALSE)
 
 ### Computing convergance statistics and write out results
-stats <- apply(column_map, 1, proc_control)
-print("\n done processing controls")
-stats = rbindlist(stats)
-fname = file.path(validation_dir, paste(scenario, "Emirati PopulationSim stats.csv", sep = ""))
+stats <- rbindlist(apply(column_map, 1, proc_control))
+print("done processing controls")
+fname = file.path(validation_dir, paste(scenario, " PopulationSim stats.csv", sep = ""))
 write.csv(stats, file = fname, row.names = FALSE)
 
 #for fresno only - set PRMSE and sdev to 0 as there is only one region
@@ -256,11 +256,12 @@ p2 <- ggplot(stats, aes(x = control_name, y = mean_pct_diff)) +
   labs(x = NULL, y = "Percentage Difference [+/- SDEV]", 
     title = "Region PopulationSim Controls Validation"
   ) +
-  coord_flip(ylim = c(-50, 50)) +
+  coord_flip() +
+  # coord_flip(ylim = c(-50, 50)) +
   theme_bw() +
   theme(plot.title = element_text(size = 12, lineheight = .9, face = "bold", vjust = 1))
 
-fname = file.path(validation_dir, "plots", paste(scenario, "Emirati PopulationSim Convergance-sdev.jpeg", sep = ""))
+fname = file.path(plot_dir, paste(scenario, " PopulationSim Convergance-sdev.jpeg", sep = ""))
 ggsave(file = fname, width = 8, height = 10)
 
 ### Convergance plot
@@ -272,11 +273,12 @@ p3 <- ggplot(stats, aes(x = control_name, y = mean_pct_diff)) +
   labs(x = NULL, y = "Percentage Difference [+/- PRMSE]",
    title = "Region PopulationSim Controls Validation"
    ) +
-  coord_flip(ylim = c(-50, 50)) +
+    coord_flip() +
+  # coord_flip(ylim = c(-50, 50)) +
   theme_bw() +
   theme(plot.title = element_text(size = 12, lineheight = .9, face = "bold", vjust = 1))
 
-fname = file.path(validation_dir, "plots", paste(scenario, "Emirati PopulationSim Convergance-PRMSE.jpeg", sep = ""))
+fname = file.path(plot_dir, paste(scenario, " PopulationSim Convergance-PRMSE.jpeg", sep = ""))
 ggsave(file = fname, plot = p3, width = 8, height = 10)
 
 
@@ -284,14 +286,14 @@ ggsave(file = fname, plot = p3, width = 8, height = 10)
 summary_hhid <- expanded_hhid %>% 
   mutate(FINALWEIGHT = 1) %>%
   select(FINALWEIGHT, expanded_hhid_col) %>%
-  group_by(household_id) %>%
+  group_by(hh_id) %>%
   summarise(FINALWEIGHT = sum(FINALWEIGHT))
   
-uniformity <- seed_households[seed_households$HH_WEIGHT > 0, seed_col] %>%
+uniformity <- seed_households[seed_households$WGTP > 0, c(seed_col, 'PUMA'), with = FALSE] %>%
   # left_join(summary_hhid, by = c("hhnum" = "household_id")) %>%
-  left_join(summary_hhid, by = c("household_id" = "household_id")) %>%
+  left_join(summary_hhid, by =  "hh_id") %>%
   mutate(FINALWEIGHT = ifelse(is.na(FINALWEIGHT), 0, FINALWEIGHT)) %>%
-  mutate(EXPANSIONFACTOR = FINALWEIGHT / HH_WEIGHT) %>%
+  mutate(EXPANSIONFACTOR = FINALWEIGHT / WGTP) %>%
   mutate(EFBIN = cut(EXPANSIONFACTOR, seq(0, max(EXPANSIONFACTOR) + 0.5, 0.5), right = FALSE, include.lowest = FALSE))
 
 u_analysis_puma <- group_by(uniformity, PUMA, EFBIN)
@@ -312,20 +314,20 @@ p4 <- ggplot(ef_plot_data, aes(x = EFBIN, y = PC))  +
         axis.text.y  = element_text(size = 5))  +
   scale_y_continuous(labels = percent_format())
 
-fname = file.path(validation_dir, "plots/EF-Distribution.jpeg")
+fname = file.path(plot_dir, "EF-Distribution.jpeg")
 ggsave(p4, file = fname, width = 15, height = 10)
 
 u_analysis_puma <- group_by(uniformity, PUMA)
 
 u_analysis_puma <- summarize(u_analysis_puma
-                           , W = sum(HH_WEIGHT)
+                           , W = sum(WGTP)
                            , Z = sum(FINALWEIGHT)
                            , N = n()
                            , EXP = Z / W
                            , EXP_MIN = min(EXPANSIONFACTOR)
                            , EXP_MAX = max(EXPANSIONFACTOR)
-                           , RMSE = myRMSE(EXPANSIONFACTOR, EXP, N))
-fname = file.path(validation_dir, "uniformity.csv")
+                           , RMSE = my_rmse(EXPANSIONFACTOR, EXP, N))
+fname = file.path(plot_dir, "uniformity.csv")
 write.csv(u_analysis_puma, file = fname, row.names = FALSE)
 
 
