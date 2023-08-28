@@ -12,10 +12,8 @@ import matplotlib.pyplot as plt
 
 
 # General functions
-def calc_prmse(control: pd.Series, synth: pd.Series) -> float:
-    
-    prmse = (((sum((control - synth)**2) / (sum(control > 0) - 1))**0.5) / sum(control)) * sum(synth > 0) * 100
-    
+def calc_prmse(control: pd.Series, synth: pd.Series) -> float:    
+    prmse = (((sum((control - synth)**2) / (sum(control > 0) - 1))**0.5) / sum(control)) * sum(synth > 0) * 100    
     return prmse
 
 # Function to calculate RMSE
@@ -45,9 +43,12 @@ class Validation:
         
         self.summaries = {}
         self.read_settings()
+        self.read_data()
         self.validate()
         
     def read_settings(self) -> None:
+        print('Reading settings...')
+        
         # Read yaml file
         config_path = os.path.join(os.path.dirname(__file__), 'validation_configs.yaml')
 
@@ -63,6 +64,7 @@ class Validation:
             
             
     def read_data(self) -> None:
+        print('Reading data...')
         
         # Get summaries
         for f in os.listdir(self.settings['OUTPUT_DIR']) :
@@ -92,6 +94,7 @@ class Validation:
         
     
     def process_control(self, control_map: pd.Series) -> pd.Series:
+        print(f'Processing control: {control_map["control_field"]}...')
 
         geography = control_map['geography']
         control_id = control_map['target'] + "_control"
@@ -160,9 +163,8 @@ class Validation:
         return stat_data
 
 
-
     def validate(self) -> None:
-        self.read_data()
+        print('Running validation...')
                 
         #Create plot directory
         if not os.path.exists(os.path.join(self.settings['VALID_DIR'], 'plots')):
@@ -180,7 +182,8 @@ class Validation:
         # stats[stats$geography == 'REGION', ]$prmse <- 0 
         # stats[stats$geography == 'REGION', ]$sdev <- 0
 
-        # Convergance plot        
+        # Convergance plot
+        print('Generating SDEV convergence plot')
         ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')
         ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = stats, xerr = 'sdev', fmt = 'o', color = 'steelblue')
         ax.axvline(0, 0, 1, color="coral")
@@ -192,6 +195,7 @@ class Validation:
         plt.close()
         
         # Convergance plot
+        print('Generating PRMSE convergence plot')
         ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')
         ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = stats, xerr = 'prmse', fmt = 'o', color = 'steelblue')
         ax.axvline(0, 0, 1, color="coral")
@@ -205,7 +209,8 @@ class Validation:
         plot_geos = self.settings['PLOT_GEOGRAPHIES']
         uniformity_geos = plot_geos[:(plot_geos.index(self.settings['SEED_GEOGRAPHY']) + 1)]
         
-        for geo in uniformity_geos:            
+        for geo in uniformity_geos:
+            print(f'Generating uniformity analysis plot for {geo}...')
             self.expanded_hhid['FINALWEIGHT'] = 1
             summary_hhid = self.expanded_hhid[['hh_id', 'FINALWEIGHT']].groupby('hh_id').sum().reset_index()
             uniformity = pd.merge(self.seed_households[['hh_id', 'WGTP', geo]], summary_hhid, on = 'hh_id', how = 'left')        
