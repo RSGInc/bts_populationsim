@@ -67,6 +67,8 @@ input_table_list:
     filename : control_totals_BG.csv
   - tablename: TRACT_control_data
     filename : control_totals_TRACT.csv
+  - tablename: STATE_control_data
+    filename : control_totals_STATE.csv
   - tablename: REGION_control_data
     #filename : control_totals_meta.csv
     filename : scaled_control_totals_meta.csv
@@ -77,6 +79,7 @@ input_table_list:
 household_weight_col: WGTP
 household_id_col: hh_id
 total_hh_control: h_total
+total_per_control: p_total
 
 
 # Control Specification File Name
