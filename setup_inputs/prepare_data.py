@@ -139,9 +139,11 @@ class CreateInputData:
         # Prepate state totals
         self.ACS_DATA_FINAL['STATE'] = pd.DataFrame(state_totals)
         self.ACS_DATA_FINAL['STATE'].index.name = 'STATE'
+        self.ACS_DATA_FINAL['STATE'].reset_index(inplace=True)
         
         # Prepare regional totals
         self.ACS_DATA_FINAL['REGION'] = pd.DataFrame(region_totals, index=pd.Index([1], name='REGION'))
+        self.ACS_DATA_FINAL['REGION'].reset_index(inplace=True)
             
         # Update GEOIDs and save results as targets
         for geo, df in acs_data.items():
