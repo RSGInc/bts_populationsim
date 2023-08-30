@@ -39,19 +39,20 @@ def calc_myrmse(exp, avg_exp):
 
 
 class Validation:
-    def __init__(self) -> None:
+    
+    summaries = {}
+    config_dir = os.path.join(os.path.dirname(__file__), 'validation_configs.yaml')
+    
+    def __init__(self, config_dir) -> None:        
+        self.config_dir = config_dir
         
-        self.summaries = {}
-        self.read_settings()
-        self.read_data()
-        self.validate()
         
     def read_settings(self) -> None:
         print('Reading settings...')
         
         # Read yaml file
-        config_path = os.path.join(os.path.dirname(__file__), 'validation_configs.yaml')
-
+        config_path = os.path.join(self.config_dir, 'validation_configs.yaml')
+        
         with open(config_path) as file:
             self.settings = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -63,32 +64,32 @@ class Validation:
         return
             
             
-    def read_data(self) -> None:
-        print('Reading data...')
-        
+    def read_data(self) -> None:        
         # Get summaries
-        for f in os.listdir(self.settings['OUTPUT_DIR']) :
+        for f in os.listdir(self.settings['OUTPUT_DIR']):
             if 'final_summary' in f:
+                print(f'Reading summary: {f}...')
                 fpath = os.path.join(self.settings['OUTPUT_DIR'], f)                
                 geo = re.findall("summary_(.*?).csv", f)[0]
                 df = pd.read_csv(fpath)
                 self.summaries[geo] = df
                         
         # Read control files
+        print('Reading control files...')
         control_path = [os.path.join(x, y) for x in self.settings['CONFIG_DIRS'] for y in os.listdir(x) if 'controls' in y][0]        
         self.controls = pd.read_csv(control_path)
                 
         # Read seed_households
+        print('Reading seed_households...')
         hhseed_path = [x for x in os.listdir(self.settings['DATA_DIR']) if 'seed_households' in x][0]
         hhseed_path = os.path.join(self.settings['DATA_DIR'], hhseed_path)
         self.seed_households = pd.read_csv(hhseed_path)
-        # seed_col        <- c("household_id", "HH_WEIGHT")
         
         # Read expanded_household_ids
+        print('Reading expanded_household_ids...')
         expanded_hhid_path = [x for x in os.listdir(self.settings['OUTPUT_DIR']) if 'expanded_household_ids' in x][0]
         expanded_hhid_path = os.path.join(self.settings['OUTPUT_DIR'], expanded_hhid_path)
         self.expanded_hhid = pd.read_csv(expanded_hhid_path)
-        # expanded_hhid_col  <- c("household_id")
                 
         return 
         
@@ -163,8 +164,11 @@ class Validation:
         return stat_data
 
 
-    def validate(self) -> None:
+    def run_validation(self) -> None:
         print('Running validation...')
+        
+        self.read_settings()
+        self.read_data()
                 
         #Create plot directory
         if not os.path.exists(os.path.join(self.settings['VALID_DIR'], 'plots')):
@@ -243,4 +247,7 @@ class Validation:
 
 
 if __name__ == '__main__':
-    v = Validation()
+    config_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'populationsim/configs')
+    
+    v = Validation(config_dir)
+    v.run_validation()

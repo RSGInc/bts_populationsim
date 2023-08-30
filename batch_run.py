@@ -14,12 +14,15 @@ import subprocess
 from copy import copy
 from setup_inputs.prepare_data import CreateInputData
 from setup_inputs import settings, utils
+from validation.validate_populationsim import Validation
 
 # Create a namespace object to hold our args
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str)
 parser.add_argument('--data', type=str)
 parser.add_argument('--output', type=str)
+
+popsim_dir = os.path.join(os.path.dirname(__file__), 'populationsim')
 
 
 def cleanup_output(output_dir):
@@ -31,10 +34,11 @@ def cleanup_output(output_dir):
 
 if __name__ == '__main__':
     
-    base_args = parser.parse_args()       
-    base_args.config = ['populationsim/configs_mp', 'populationsim/configs']
-    base_args.data = 'populationsim/data'
-    base_args.output = 'populationsim/output'
+    base_args = parser.parse_args()
+    
+    base_args.config = [os.path.join(popsim_dir, x) for x in ['configs_mp', 'configs']]
+    base_args.data = os.path.join(popsim_dir, 'data')
+    base_args.output = os.path.join(popsim_dir, 'output')          
         
     if 'populationsim/configs_mp' in base_args.config:
         base_args.output += '_mp'
@@ -108,6 +112,10 @@ if __name__ == '__main__':
                                                 
                 subprocess.call(command)
                 # cleanup_output(args.output)
+                
+                validation = Validation(args.config)
+                validation.run_validation()
+
 
             else:
                 print(f'#### {state_str} already run, skipping... ####')
