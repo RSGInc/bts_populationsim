@@ -1,41 +1,42 @@
 target,geography,seed_table,importance,control_field,control_group,expression
 h_total,BG,households,100000,H_TOTAL,h_total,(households.WGTP > 0) & (households.WGTP < np.inf)
 p_total,BG,persons,100000,P_TOTAL,p_total,(persons.PWGTP > 0) & (persons.PWGTP < np.inf)
-p_male,BG,persons,1000,P_MALE,p_sex,persons.SEX == 1
-p_female,BG,persons,1000,P_FEMALE,p_sex,persons.SEX == 2
-p_age_0_4,BG,persons,1000,P_AGE_0_4,p_age,persons.AGEP <= 4
-p_age_5_17,BG,persons,1000,P_AGE_5_17,p_age,(persons.AGEP >4) & (persons.AGEP <= 17)
-p_age_18_34,BG,persons,1000,P_AGE_18_34,p_age,(persons.AGEP > 17) & (persons.AGEP <= 34)
-p_age_35_49,BG,persons,1000,P_AGE_35_49,p_age,(persons.AGEP > 34) & (persons.AGEP <= 49)
-p_age_50_64,BG,persons,1000,P_AGE_50_64,p_age,(persons.AGEP > 49) & (persons.AGEP <= 64)
-p_age_65plus,BG,persons,1000,P_AGE_65PLUS,p_age,(persons.AGEP > 64)
-p_race_white,BG,persons,1000,P_RACE_WHITE,p_race,persons.RAC1P == 1
-p_race_black,BG,persons,1000,P_RACE_BLACK,p_race,persons.RAC1P == 2
-p_race_aapi,BG,persons,1000,P_RACE_AAPI,p_race,"persons.RAC1P.isin([6,7])"
-p_race_other,BG,persons,1000,P_RACE_OTHER,p_race,"~persons.RAC1P.isin([1,2,6,7])"
-p_hispanic,BG,persons,1000,P_HISPANIC,p_hispanic,persons.HISP != 1
-p_non_hispanic,BG,persons,1000,P_NON_HISPANIC,p_hispanic,persons.HISP == 1
-h_size_1,TRACT,households,1000,H_SIZE_1,h_size,households.NP == 1
-h_size_2,TRACT,households,1000,H_SIZE_2,h_size,households.NP == 2
-h_size_3,TRACT,households,1000,H_SIZE_3,h_size,households.NP == 3
-h_size_4_plus,TRACT,households,1000,H_SIZE_4PLUS,h_size,households.NP >= 4
-h_no_veh,TRACT,households,1000,H_NO_VEH,h_veh,households.VEH == 0
-h_1ormore_vehpp,TRACT,households,1000,H_1ORMORE_VEHPP,h_veh,households.NP_ADULTS <= households.VEH
-h_fewer_vehpp,TRACT,households,1000,H_FEWER_VEHPP,h_veh,(households.NP_ADULTS > households.VEH) & (households.VEH > 0)
-p_mode_auto_other,TRACT,persons,1000,P_MODE_AUTO_OTHER,p_mode,"persons.JWTRNS.isin([1, 7, 8, 12])"
-p_mode_transit,TRACT,persons,1000,P_MODE_TRANSIT,p_mode,"persons.JWTRNS.isin([2, 3, 4, 5, 6])"
-p_mode_walk_bike,TRACT,persons,1000,P_MODE_WALK_BIKE,p_mode,"persons.JWTRNS.isin([9,10])"
-p_mode_wfh,TRACT,persons,1000,P_MODE_WFH,p_mode,persons.JWTRNS == 11
-h_children,BG,households,1000,H_CHILDREN,h_children,households.HUPAC != 4
-h_no_children,BG,households,1000,H_NO_CHILDREN,h_children,households.HUPAC == 4
-p_university,BG,persons,1000,P_UNIVERSITY,p_university,"persons.SCHG.isin([15,16])"
-p_non_university,BG,persons,1000,P_NON_UNIVERSITY,p_university,"~persons.SCHG.isin([15,16])"
-h_income_0_25,BG,households,1000,H_INCOME_0_25,h_income,households.HINCP <= 25000
-h_income_25_50,BG,households,1000,H_INCOME_25_50,h_income,(households.HINCP > 25000) & (households.HINCP <= 50000)
-h_income_50_75,BG,households,1000,H_INCOME_50_75,h_income,(households.HINCP > 50000) & (households.HINCP <= 75000)
-h_income_75_100,BG,households,1000,H_INCOME_75_100,h_income,(households.HINCP > 75000) & (households.HINCP <= 100000)
-h_income_100_150,BG,households,1000,H_INCOME_100_150,h_income,(households.HINCP > 100000) & (households.HINCP <= 150000)
-h_income_150plus,BG,households,1000,H_INCOME_150PLUS,h_income,(households.HINCP > 150000)
-p_full_time,BG,persons,1000,P_FULL_TIME,p_emp,"(persons.WKHP >= 35) & persons.ESR.isin([1,2,4,5])"
-p_part_time,BG,persons,1000,P_PART_TIME,p_emp,"(persons.WKHP < 35) & persons.ESR.isin([1,2,4,5])"
-p_non_worker,BG,persons,1000,P_NON_WORKER,p_emp,"~persons.ESR.isin([1,2,4,5])"
+p_male,BG,persons,1000,P_MALE,p_sex,(persons.SEX == 1) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_female,BG,persons,1000,P_FEMALE,p_sex,(persons.SEX == 2) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_age_0_4,BG,persons,1000,P_AGE_0_4,p_age,(persons.AGEP <= 4) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_age_5_17,BG,persons,1000,P_AGE_5_17,p_age,(persons.AGEP >4) & (persons.AGEP <= 17) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_age_18_34,BG,persons,1000,P_AGE_18_34,p_age,(persons.AGEP > 17) & (persons.AGEP <= 34) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_age_35_49,BG,persons,1000,P_AGE_35_49,p_age,(persons.AGEP > 34) & (persons.AGEP <= 49) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_age_50_64,BG,persons,1000,P_AGE_50_64,p_age,(persons.AGEP > 49) & (persons.AGEP <= 64) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_age_65plus,BG,persons,1000,P_AGE_65PLUS,p_age,(persons.AGEP > 64) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_race_white,BG,persons,1000,P_RACE_WHITE,p_race,(persons.RAC1P == 1) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_race_black,BG,persons,1000,P_RACE_BLACK,p_race,(persons.RAC1P == 2) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_race_aapi,BG,persons,1000,P_RACE_AAPI,p_race,"persons.RAC1P.isin([6,7]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
+p_race_other,BG,persons,1000,P_RACE_OTHER,p_race,"~persons.RAC1P.isin([1,2,6,7]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
+p_hispanic,BG,persons,1000,P_HISPANIC,p_hispanic,(persons.HISP != 1) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_non_hispanic,BG,persons,1000,P_NON_HISPANIC,p_hispanic,(persons.HISP == 1) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+h_size_1,TRACT,households,1000,H_SIZE_1,h_size,(households.NP == 1) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_size_2,TRACT,households,1000,H_SIZE_2,h_size,(households.NP == 2) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_size_3,TRACT,households,1000,H_SIZE_3,h_size,(households.NP == 3) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_size_4_plus,TRACT,households,1000,H_SIZE_4PLUS,h_size,(households.NP >= 4) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_no_veh,TRACT,households,1000,H_NO_VEH,h_veh,(households.VEH == 0) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_1ormore_vehpp,TRACT,households,1000,H_1ORMORE_VEHPP,h_veh,(households.NP_ADULTS <= households.VEH) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_fewer_vehpp,TRACT,households,1000,H_FEWER_VEHPP,h_veh,(households.NP_ADULTS > households.VEH) & (households.VEH > 0) & (households.WGTP > 0) & (households.WGTP < np.inf)
+p_mode_auto_other,TRACT,persons,1000,P_MODE_AUTO_OTHER,p_mode,"persons.JWTRNS.isin([1, 7, 8, 12]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
+p_mode_transit,TRACT,persons,1000,P_MODE_TRANSIT,p_mode,"persons.JWTRNS.isin([2, 3, 4, 5, 6]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
+p_mode_walk_bike,TRACT,persons,1000,P_MODE_WALK_BIKE,p_mode,"persons.JWTRNS.isin([9,10]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
+p_mode_wfh,TRACT,persons,1000,P_MODE_WFH,p_mode,(persons.JWTRNS == 11) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+p_mode_na,TRACT,persons,1000,P_MODE_NA,p_mode,(persons.JWTRNS.isna() | (persons.JWTRNS == 995)) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
+h_children,BG,households,1000,H_CHILDREN,h_children,(households.HUPAC != 4) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_no_children,BG,households,1000,H_NO_CHILDREN,h_children,(households.HUPAC == 4) & (households.WGTP > 0) & (households.WGTP < np.inf)
+p_university,BG,persons,1000,P_UNIVERSITY,p_university,"persons.SCHG.isin([15,16]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
+p_non_university,BG,persons,1000,P_NON_UNIVERSITY,p_university,"~persons.SCHG.isin([15,16]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
+h_income_0_25,BG,households,1000,H_INCOME_0_25,h_income,(households.HINCP <= 25000) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_income_25_50,BG,households,1000,H_INCOME_25_50,h_income,(households.HINCP > 25000) & (households.HINCP <= 50000) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_income_50_75,BG,households,1000,H_INCOME_50_75,h_income,(households.HINCP > 50000) & (households.HINCP <= 75000) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_income_75_100,BG,households,1000,H_INCOME_75_100,h_income,(households.HINCP > 75000) & (households.HINCP <= 100000) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_income_100_150,BG,households,1000,H_INCOME_100_150,h_income,(households.HINCP > 100000) & (households.HINCP <= 150000) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_income_150plus,BG,households,1000,H_INCOME_150PLUS,h_income,(households.HINCP > 150000) & (households.WGTP > 0) & (households.WGTP < np.inf)
+p_full_time,BG,persons,1000,P_FULL_TIME,p_emp,"(persons.WKHP >= 35) & persons.ESR.isin([1,2,4,5]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
+p_part_time,BG,persons,1000,P_PART_TIME,p_emp,"(persons.WKHP < 35) & persons.ESR.isin([1,2,4,5]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
+p_non_worker,BG,persons,1000,P_NON_WORKER,p_emp,"~persons.ESR.isin([1,2,4,5]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
