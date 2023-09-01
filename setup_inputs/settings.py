@@ -100,6 +100,7 @@ assert set(CONTROL_FIELDS) == set(PUMS_AGGREGATOR.control_field.to_list()),\
 ACS_DATA_PREFIX = 'acs_data'
 PUMS_DATA_PREFIX = 'pums_data'
 PUMS_SOURCE = 'ftp'
+CHECKSUM_TOLERANCE = 0.01 # 1% tolerance for checksums
 
 # Read popsim yaml
 with open(os.path.join(POPSIM_DIR, 'configs/settings.yaml')) as f:
