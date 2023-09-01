@@ -230,21 +230,21 @@ class CreateInputData:
         # Check the control group sums against the target sums
         bad_targets, bad_controls = [], []
         target_sums, group_sums = [], {}
-        for (geo, table, control_group), fields in settings.PUMS_AGGREGATOR.groupby(group_cols).control_field:
+        for (geo, table_name, control_group), fields in settings.PUMS_AGGREGATOR.groupby(group_cols).control_field:
             group_sums[control_group] = self.ACS_DATA_FINAL[geo][fields].sum().sum()
             target_sums.append(self.ACS_DATA_FINAL[geo][fields].sum(axis=0))
             
-            if group_sums[control_group] != total_sums[table]:
+            if not np.isclose(group_sums[control_group], total_sums[table_name], rtol=settings.CHECKSUM_TOLERANCE):
                 bad_targets.extend(fields.to_list())
                 bad_controls.append(control_group)
                 
-                if total_cols[table].lower() not in bad_controls:
-                    bad_controls.append(total_cols[table].lower())
+                if total_cols[table_name].lower() not in bad_controls:
+                    bad_controls.append(total_cols[table_name].lower())
     
         target_sums = pd.concat(target_sums)
         group_sums = pd.Series(group_sums)
   
-        assert len(bad_targets) == 0, f'Control groups do not match for\n{group_sums.loc[bad_controls]}!'
+        assert len(bad_targets) == 0, f'Target totals groups do not match for\n{group_sums.loc[bad_controls]}!'
 
         return
     
@@ -282,7 +282,7 @@ class CreateInputData:
                 group_sums[control_group] = sum(targets.values())
 
                 assert isinstance(table_name, str), 'Table name is not a string!'
-                if group_sums[control_group] != total_sums[table_name]:
+                if not np.isclose(group_sums[control_group], total_sums[table_name], rtol=settings.CHECKSUM_TOLERANCE):
                     bad_targets.extend(targets.keys())
                     bad_controls.append(control_group)
                     
@@ -292,7 +292,7 @@ class CreateInputData:
         target_sums = pd.Series(target_sums)
         group_sums = pd.Series(group_sums)                        
         
-        assert len(bad_targets) == 0, f'Control groups do not match for\n{group_sums.loc[bad_controls]}!'
+        assert len(bad_targets) == 0, f'Seed target groups do not match for\n{group_sums.loc[bad_controls]}!'
         
         return
             
