@@ -34,8 +34,7 @@ def cleanup_output(output_dir):
 
 if __name__ == '__main__':
     
-    base_args = parser.parse_args()
-    
+    base_args = parser.parse_args()    
     base_args.config = [os.path.join(popsim_dir, x) for x in ['configs_mp', 'configs']]
     base_args.data = os.path.join(popsim_dir, 'data')
     base_args.output = os.path.join(popsim_dir, 'output')          
@@ -57,7 +56,7 @@ if __name__ == '__main__':
     
     DataCreator = None
 
-    # settings.STATES = ['AZ', 'CA', 'KY'] # Debugging
+    # settings.STATES = ['AK', 'WY'] # Debugging
     for states_chunk in utils.batched(settings.STATES, settings.BATCH_SIZE):
         
         if len(states_chunk) > 12:
