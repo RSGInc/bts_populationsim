@@ -11,21 +11,6 @@ import us
 
 from setup_inputs import settings
 
-GEOID_LEN = {
-    'STATE': 2,
-    'COUNTY': 3,
-    'TRACT': 6,
-    'BG': 1,
-    'PUMA': 5
-    }
-
-GEOID_STRUCTURE = {
-    'BG': ['STATE', 'COUNTY', 'TRACT', 'BG'],
-    'TRACT': ['STATE', 'COUNTY', 'TRACT'],
-    'COUNTY': ['STATE', 'COUNTY'],
-    'STATE': ['STATE'],
-    'PUMA': ['STATE', 'PUMA']
-}
 
 def format_geoids(target_df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
     """
@@ -39,7 +24,7 @@ def format_geoids(target_df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame
         pd.DataFrame: the formatted DataFrame
     """
     
-    cols = list(set(target_df.columns).intersection(GEOID_LEN.keys()))
+    cols = list(set(target_df.columns).intersection(settings.GEOID_LEN.keys()))
     
     assert len(cols) > 0, 'No geoid columns found in the DataFrame'
     assert isinstance(target_df, pd.DataFrame), 'Input is not a DataFrame'
@@ -50,7 +35,7 @@ def format_geoids(target_df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame
     # Can use this to debug column formatting
     # df[[x + '_old' for x in cols]] = df[cols]
     
-    for geoid, digits in GEOID_LEN.items():
+    for geoid, digits in settings.GEOID_LEN.items():
         if geoid in df.columns:
             if verbose:
                 print(f'Formatting {geoid} GEOID field')
@@ -64,9 +49,9 @@ def format_geoids(target_df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame
             
             # Concatenate the geoid parts ensuring that only the appropriate last n-digits are used
             new_id = 0
-            full_digits = sum([GEOID_LEN[x] for x in GEOID_STRUCTURE[geoid]])            
-            for i, part_col in enumerate(GEOID_STRUCTURE[geoid]):
-                part_digits = GEOID_LEN[part_col]
+            full_digits = sum([settings.GEOID_LEN[x] for x in settings.GEOID_STRUCTURE[geoid]])            
+            for i, part_col in enumerate(settings.GEOID_STRUCTURE[geoid]):
+                part_digits = settings.GEOID_LEN[part_col]
                 full_digits += part_digits
                 
                 assert df[part_col].isna().sum() == 0, f'Geoid part {part_col} has missing values'
