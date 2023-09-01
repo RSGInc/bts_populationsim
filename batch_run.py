@@ -39,7 +39,7 @@ if __name__ == '__main__':
     base_args.data = os.path.join(popsim_dir, 'data')
     base_args.output = os.path.join(popsim_dir, 'output')          
         
-    if 'populationsim/configs_mp' in base_args.config:
+    if any([True for x in base_args.config if 'configs_mp' in x]):
         base_args.output += '_mp'
         
     # Expected inputs
@@ -112,13 +112,13 @@ if __name__ == '__main__':
                 subprocess.call(command)
                 # cleanup_output(args.output)
                 
-                validation = Validation(args.config)
-                validation.run_validation()
-
-
             else:
                 print(f'#### {state_str} already run, skipping... ####')
                 # cleanup_output(args.output)
+        
+            print(f'#### Running validation for {state_str}... ####')
+            validation = Validation(args.config[1])
+            validation.run_validation()
                 
         except:
             print(f'Error running {state_str}, skipping...')
