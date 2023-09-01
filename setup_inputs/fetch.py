@@ -212,11 +212,15 @@ def fetch_from_api(data_type: str) -> dict:
                 state_fips = data_dict[geo].state.apply(lambda x: x.zfill(2))
                 missing_states = set(fips_list).difference(state_fips)                
                 missing_columns = set(fields.keys()).difference(data_dict[geo].columns)
-                
-                if len(missing_states) > 0 or len(missing_columns) > 0:                    
-                    missing_states = set(us.states.lookup(x) for x in missing_states)                    
-                    kwargs['geo_fields'][geo] = fields
+                                
+                if len(missing_states) > 0:                    
+                    missing_states = set(us.states.lookup(x) for x in missing_states)
                     kwargs['state_obj_ls'] = missing_states.union(kwargs['state_obj_ls'])
+                    
+                if len(missing_columns) > 0:                    
+                    missing_field_states = set(us.states.lookup(x) for x in state_fips)                    
+                    kwargs['geo_fields'][geo] = fields
+                    kwargs['state_obj_ls'] = missing_field_states.union(kwargs['state_obj_ls'])
                     
                 else:
                     print(f'Loading existing {geo} {data_type} data')
