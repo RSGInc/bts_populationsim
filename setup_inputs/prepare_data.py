@@ -1,6 +1,8 @@
+import numpy as np
 import pandas as pd
 import geopandas as gpd
 import os
+from itertools import chain
 from us import states
 from setup_inputs import settings, utils, geographies, fetch
 
@@ -13,6 +15,11 @@ class CreateInputData:
         self.STATES = settings.STATES
         self.replace = replace
         self.verbose = verbose
+        
+        self.renames = {
+            'ST': 'STATE',
+            'BLOCK GROUP': 'BG',
+        }
         
         # Raw data
         self.ACS_DATA = fetch.fetch('ACS')
@@ -117,23 +124,59 @@ class CreateInputData:
         self.PUMS_DATA_FINAL['HH'] = pums_hh
         self.PUMS_DATA_FINAL['PER'] = pums_per
         
+        self.check_seeds(pums_hh, pums_per)
+        
         return
 
     def create_acs_targets(self):        
         print('#### Creating ACS targets... ####')
             
         # Select the states
-        acs_data_select = {geo: df[df.state.isin(self.FIPS)].copy() for geo, df in self.ACS_DATA.items()}    
+        acs_data_select = {geo: df[df.state.isin(self.FIPS)].copy() for geo, df in self.ACS_DATA.items()}
+        
+        # GEOID cols
+        renames = [[a, b] for a, b in self.renames.items()]
+        structs = list(settings.GEOID_STRUCTURE.values())
+        geoid_set = set([item.lower() for sublist in renames + structs for item in sublist])
         
         # Make a new copy to work with
         acs_data = acs_data_select.copy()
-        state_totals = {}
-        region_totals = {}
+        state_totals, region_totals = {}, {}
         for (geo, variable), fields in settings.ACS_AGGREGATION.items():
             acs_data[geo][variable] = acs_data_select[geo][fields].sum(axis=1)
             acs_data[geo].drop(columns=fields, inplace=True)
             region_totals[variable] = acs_data[geo][variable].sum()
             state_totals[variable] = acs_data[geo].groupby('state')[variable].sum()
+            
+        # Add any remainder columns
+        for remainder_col, specs in settings.ACS_REMAINDERS.items():
+            rem_geo = specs['GEOGRAPHY']
+            add_cols = specs['ADD_COLS'] if isinstance(specs['ADD_COLS'], list) else [specs['ADD_COLS']]
+            sub_cols = specs['SUBTRACT_COLS'] if isinstance(specs['SUBTRACT_COLS'], list) else [specs['SUBTRACT_COLS']]
+            
+            # Get the geography that the add column are in
+            add_geo, sub_geo = None, None
+            for geo, df in acs_data.items():                
+                if len(set(add_cols) - set(df.columns)) == 0:
+                    add_geo = geo
+                if len(set(sub_cols) - set(df.columns)) == 0:
+                    sub_geo = geo
+            
+            assert add_geo is not None and sub_geo is not None, \
+                f'Could not find {add_cols} or {sub_cols} in any geography!'            
+            assert rem_geo in settings.GEOID_STRUCTURE[sub_geo] and rem_geo in settings.GEOID_STRUCTURE[add_geo], \
+                f'{sub_geo} or {add_geo} is not a sub-geography of {rem_geo}!'            
+
+            
+            geoid_cols = list(geoid_set.intersection(acs_data[rem_geo].columns))
+            
+            # Aggregate the two field lists to the same geographic level
+            add_data = acs_data[add_geo].groupby(geoid_cols)[add_cols].sum().sum(axis=1)
+            sub_data = acs_data[sub_geo].groupby(geoid_cols)[sub_cols].sum().sum(axis=1)
+            rem_data = (add_data - sub_data).to_frame(remainder_col)             
+            acs_data[rem_geo] = acs_data[rem_geo].merge(rem_data, on=geoid_cols)            
+            
+            assert all(rem_data > 0), f'Remainder {remainder_col} is negative!'
             
         
         # Prepate state totals
@@ -145,14 +188,14 @@ class CreateInputData:
         self.ACS_DATA_FINAL['REGION'] = pd.DataFrame(region_totals, index=pd.Index([1], name='REGION'))
         self.ACS_DATA_FINAL['REGION'].reset_index(inplace=True)
             
-        # Update GEOIDs and save results as targets
+        # Update GEOIDs and save results as targets        
         for geo, df in acs_data.items():
             print(f'Formatting {geo} targets...')
             # Rename any specific columns
             renamer = dict(zip(df.columns, df.columns.str.upper()))
             for old_name, new_name in renamer.items():
-                if old_name.upper() in settings.RENAME.keys():
-                    renamer[old_name] = settings.RENAME[new_name]
+                if old_name.upper() in self.renames.keys():
+                    renamer[old_name] = self.renames[new_name]
             df = df.rename(columns=renamer)
             # Format GEOIDs        
             df = utils.format_geoids(df, verbose=self.verbose)
@@ -161,10 +204,98 @@ class CreateInputData:
             # Assert that index is consistent
             assert len(df.index) == df[geo].nunique(), f'Index is not unique for {geo}!'
             
-            self.ACS_DATA_FINAL[geo] = df         
+            self.ACS_DATA_FINAL[geo] = df        
+            
+        self.check_targets()
             
         return
     
+    def check_targets(self) -> None:
+        total_cols = {
+            'households': settings.POPSIM_SETTINGS['total_hh_control'].upper(),
+            'persons': settings.POPSIM_SETTINGS['total_per_control'].upper()
+        }
+        group_cols = ['geography', 'seed_table', 'control_group']
+        
+        # Get the target total to match to        
+        total_sums = {}
+        for data in self.ACS_DATA_FINAL.values():            
+            if set(total_cols.values()) == set(total_sums.values()):
+                break
+            
+            cols = list(set(total_cols.values()).intersection(data.columns))
+            sums = data[cols].sum(axis=0).rename(index = {y: x for x, y in total_cols.items()})            
+            total_sums.update(sums)
+                    
+        # Check the control group sums against the target sums
+        bad_targets, bad_controls = [], []
+        target_sums, group_sums = [], {}
+        for (geo, table, control_group), fields in settings.PUMS_AGGREGATOR.groupby(group_cols).control_field:
+            group_sums[control_group] = self.ACS_DATA_FINAL[geo][fields].sum().sum()
+            target_sums.append(self.ACS_DATA_FINAL[geo][fields].sum(axis=0))
+            
+            if group_sums[control_group] != total_sums[table]:
+                bad_targets.extend(fields.to_list())
+                bad_controls.append(control_group)
+                
+                if total_cols[table].lower() not in bad_controls:
+                    bad_controls.append(total_cols[table].lower())
+    
+        target_sums = pd.concat(target_sums)
+        group_sums = pd.Series(group_sums)
+  
+        assert len(bad_targets) == 0, f'Control groups do not match for\n{group_sums.loc[bad_controls]}!'
+
+        return
+    
+    def check_seeds(self, households: pd.DataFrame, persons: pd.DataFrame) -> None:
+        """
+        Check that the seed targets are consistent with the control groups.
+        For example, that the sum of p_mode_... = p_total
+        
+        Raises:
+            AssertionError: If the seed targets are not consistent with the control groups.
+        """
+
+        local_scope = locals()
+        global_scope = globals()
+        
+        assert isinstance(households, pd.DataFrame), 'Households is not a DataFrame!'
+        assert isinstance(persons, pd.DataFrame), 'Persons is not a DataFrame!'
+                        
+        controls = settings.PUMS_AGGREGATOR.set_index('target')        
+        total_cols = {
+            'households': settings.POPSIM_SETTINGS['total_hh_control'],
+            'persons': settings.POPSIM_SETTINGS['total_per_control']
+        }        
+        total_sums = {table: sum(eval(controls.loc[col].expression, global_scope, local_scope)) for table, col in total_cols.items()}     
+
+        # Check that seed targets are consistent
+        target_sums, group_sums = {}, {}
+        bad_targets, bad_controls = [], []
+        
+        for table_name, seed_df in settings.PUMS_AGGREGATOR.groupby('seed_table'):
+            for control_group, group_df in seed_df.groupby('control_group')[['target', 'expression']]:
+                targets = {target: sum(eval(expression, global_scope, local_scope)) for target, expression in group_df.itertuples(index=False)}
+                
+                target_sums.update(targets)
+                group_sums[control_group] = sum(targets.values())
+
+                assert isinstance(table_name, str), 'Table name is not a string!'
+                if group_sums[control_group] != total_sums[table_name]:
+                    bad_targets.extend(targets.keys())
+                    bad_controls.append(control_group)
+                    
+                    if total_cols[table_name] not in bad_controls:
+                        bad_controls.append(total_cols[table_name])
+                                        
+        target_sums = pd.Series(target_sums)
+        group_sums = pd.Series(group_sums)                        
+        
+        assert len(bad_targets) == 0, f'Control groups do not match for\n{group_sums.loc[bad_controls]}!'
+        
+        return
+            
     def create_crosswalk(self):
         
         print('#### Creating crosswalk... ####')
@@ -261,8 +392,8 @@ class CreateInputData:
             # Rename any specific columns
             renamer = dict(zip(df.columns, df.columns.str.upper()))
             for old_name, new_name in renamer.items():
-                if old_name.upper() in settings.RENAME.keys():
-                    renamer[old_name] = settings.RENAME[new_name]
+                if old_name.upper() in self.renames.keys():
+                    renamer[old_name] = self.renames[new_name]
             df = df.rename(columns=renamer)
             
             # Format geoids
