@@ -53,6 +53,8 @@ class Validation:
         # Read yaml file
         config_path = os.path.join(self.config_dir, 'validation_configs.yaml')
         
+        assert os.path.exists(config_path), f'Config file not found: {config_path}'
+        
         with open(config_path) as file:
             self.settings = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -104,7 +106,7 @@ class Validation:
         
         # Fetching data for the geography
         sub_summary = self.summaries[geography]
-
+                
         # Fetching control and synthesized columns
         controls = sub_summary[['id', control_id]]
         synthesized = sub_summary[['id', summary_id]]
