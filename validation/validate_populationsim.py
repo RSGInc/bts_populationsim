@@ -7,13 +7,12 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-# TODO convert from ValidatePopulationsim.R?
-
-
-
 # General functions
 def calc_prmse(control: pd.Series, synth: pd.Series) -> float:    
-    prmse = (((sum((control - synth)**2) / (sum(control > 0) - 1))**0.5) / sum(control)) * sum(synth > 0) * 100    
+    prmse = 0
+    if control.shape[0] > 1:    
+        prmse = (((sum((control - synth)**2) / (sum(control > 0) - 1))**0.5) / sum(control)) * sum(synth > 0) * 100
+        
     return prmse
 
 # Function to calculate RMSE
@@ -58,11 +57,6 @@ class Validation:
         with open(config_path) as file:
             self.settings = yaml.load(file, Loader=yaml.FullLoader)
 
-        if self.settings['PLOT_GEOGRAPHIES'] is None:
-            self.settings['PLOT_GEOGRAPHIES'] = []
-        else:
-            self.settings.get('PLOT_GEOGRAPHIES', [])
-
         return
             
             
@@ -96,13 +90,14 @@ class Validation:
         return 
         
     
-    def process_control(self, control_map: pd.Series) -> pd.Series:
-        print(f'Processing control: {control_map["control_field"]}...')
-
+    def process_control(self, control_map: pd.Series, plot: bool = True) -> pd.Series:
+        
         geography = control_map['geography']
         control_id = control_map['target'] + "_control"
         summary_id = control_map['target'] + "_result"
         control_name = control_map['control_field']
+        
+        print(f'Processing control {geography}: {control_name}...')
         
         # Fetching data for the geography
         sub_summary = self.summaries[geography]
@@ -135,20 +130,23 @@ class Validation:
         N = sum(compare_data['CONTROL'] > 0)
         prmse = calc_prmse(compare_data['CONTROL'], compare_data['SYNTHESIZED'])
         mean_pct_diff = np.mean(compare_data['pcDIFFERENCE'])
-        sdev = np.std(compare_data['pcDIFFERENCE'], ddof = 1)       
+        sdev = np.std(compare_data['pcDIFFERENCE'], ddof = 1)
+        
+        # Combine result
         stat_data = pd.Series(
             [control_name, geography, observed, predicted, difference, pct_difference, N, prmse, mean_pct_diff, sdev],
             index=['control_name', 'geography', 'observed', 'predicted', 'difference', 'pct_difference', 'N', 'prmse', 'mean_pct_diff', 'sdev'])
     
-        # Preparing data for difference frequency plot
-        freq_plot_data = compare_data[compare_data['CONTROL'] > 0].groupby('DIFFERENCE').size().reset_index(name='FREQUENCY')
-        
-        if geography in self.settings['PLOT_GEOGRAPHIES']:
+        # Frequency Plot    
+        if plot:
+            # Preparing data for difference frequency plot
+            freq_plot_data = compare_data[compare_data['CONTROL'] > 0].groupby('DIFFERENCE').size().reset_index(name='FREQUENCY')
+            
             # computing plotting parameters            
             xaxis_limit = np.max(np.abs(freq_plot_data['DIFFERENCE'])) + 10
             ylimit = freq_plot_data.FREQUENCY.max()
             
-            plot_title = "Frequency Plot: Syn - Control totals for " + control_name
+            plot_title = f"Frequency Plot: Syn - Control totals for {control_name} in {geography}"
             
             # Frequency Plot
             ax = sns.scatterplot(x = 'DIFFERENCE', y = 'FREQUENCY', data = freq_plot_data, color = 'coral')
@@ -159,7 +157,7 @@ class Validation:
             ax.set(xlabel='Difference', ylabel='Frequency', title=plot_title)            
             ax.figure.tight_layout()
             # plt.show()
-            fname = os.path.join(self.settings['VALID_DIR'], 'plots', control_id + ".png")        
+            fname = os.path.join(self.settings['VALID_DIR'], 'plots', f'{control_id}_{geography}.png')        
             ax.figure.savefig(fname)
             plt.close()
             
@@ -178,41 +176,49 @@ class Validation:
 
         # Computing convergance statistics and write out results            
         assert self.controls is not None, "Controls not found"
-        stats = self.controls.apply(self.process_control, axis=1)
         
-        fname = os.path.join(self.settings['VALID_DIR'], 'populationsim_stats.csv')
-        stats.to_csv(fname, index=False)
-
+        super_geos = set(self.settings['GEOGRAPHIES']) - set(self.settings['SUB_GEOGRAPHIES'])
+        super_geos.add(None)
         
-        # #for fresno only - set PRMSE and sdev to 0 as there is only one region
-        # stats[stats$geography == 'REGION', ]$prmse <- 0 
-        # stats[stats$geography == 'REGION', ]$sdev <- 0
-
-        # Convergance plot
-        print('Generating SDEV convergence plot')
-        ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')
-        ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = stats, xerr = 'sdev', fmt = 'o', color = 'steelblue')
-        ax.axvline(0, 0, 1, color="coral")
-        ax.set(ylabel='Control', xlabel='Percentage Difference', title='Region PopulationSim Controls Validation (Mean +/- SDEV)')    
-        ax.figure.set_size_inches(8, 10)
-        ax.figure.tight_layout()
-        # plt.show()        
-        ax.figure.savefig(os.path.join(self.settings['VALID_DIR'], 'plots', 'convergance-sdev.png'))
-        plt.close()
+        for geo in super_geos:
+            agg_controls = self.controls.copy()
+            geo_suffix = ''
+            plot = True
+            
+            if geo is not None:
+                geo_suffix = f'_{geo}'
+                agg_controls['geography'] += geo_suffix 
+                plot = False
+                
+            stats = agg_controls.apply(lambda x: self.process_control(x, plot=plot), axis=1)            
+            fname = os.path.join(self.settings['VALID_DIR'], f'populationsim_stats{geo_suffix}.csv')
+            stats.to_csv(fname, index=False)            
         
-        # Convergance plot
-        print('Generating PRMSE convergence plot')
-        ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')
-        ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = stats, xerr = 'prmse', fmt = 'o', color = 'steelblue')
-        ax.axvline(0, 0, 1, color="coral")
-        ax.set(ylabel='Control', xlabel='Percentage Difference', title='Region PopulationSim Controls Validation (Mean +/- PRMSE)')
-        ax.figure.set_size_inches(8, 10)
-        ax.figure.tight_layout()
-        ax.figure.savefig(os.path.join(self.settings['VALID_DIR'], 'plots', 'convergance-prmse.png'))
-        plt.close()
+            # Convergance plot
+            print('Generating SDEV convergence plot')
+            ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')
+            ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = stats, xerr = 'sdev', fmt = 'o', color = 'steelblue')
+            ax.axvline(0, 0, 1, color="coral")
+            ax.set(ylabel='Control', xlabel='Percentage Difference', title='Region PopulationSim Controls Validation (Mean +/- SDEV)')    
+            ax.figure.set_size_inches(8, 10)
+            ax.figure.tight_layout()
+            # plt.show()        
+            ax.figure.savefig(os.path.join(self.settings['VALID_DIR'], 'plots', f'convergance-sdev{geo_suffix}.png'))
+            plt.close()
+            
+            # Convergance plot
+            print('Generating PRMSE convergence plot')
+            ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')
+            ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = stats, xerr = 'prmse', fmt = 'o', color = 'steelblue')
+            ax.axvline(0, 0, 1, color="coral")
+            ax.set(ylabel='Control', xlabel='Percentage Difference', title='Region PopulationSim Controls Validation (Mean +/- PRMSE)')
+            ax.figure.set_size_inches(8, 10)
+            ax.figure.tight_layout()
+            ax.figure.savefig(os.path.join(self.settings['VALID_DIR'], 'plots', f'convergance-prmse{geo_suffix}.png'))
+            plt.close()
         
         # Uniformity Analysis
-        plot_geos = self.settings['PLOT_GEOGRAPHIES']
+        plot_geos = self.settings['GEOGRAPHIES']
         uniformity_geos = plot_geos[:(plot_geos.index(self.settings['SEED_GEOGRAPHY']) + 1)]
         
         for geo in uniformity_geos:
