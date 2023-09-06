@@ -90,7 +90,7 @@ class Validation:
         return 
         
     
-    def process_control(self, control_map: pd.Series, plot: bool = True) -> pd.Series:
+    def process_control(self, control_map: pd.Series, plot: bool = True, quantile: str|None = None) -> pd.Series:
         
         geography = control_map['geography']
         control_id = control_map['target'] + "_control"
@@ -101,6 +101,9 @@ class Validation:
         
         # Fetching data for the geography
         sub_summary = self.summaries[geography]
+        
+        if 'geo_quantiles' in sub_summary.columns and quantile is not None:
+            sub_summary = sub_summary[sub_summary['geo_quantiles'] == quantile]
                 
         # Fetching control and synthesized columns
         controls = sub_summary[['id', control_id]]
@@ -136,7 +139,10 @@ class Validation:
         stat_data = pd.Series(
             [control_name, geography, observed, predicted, difference, pct_difference, N, prmse, mean_pct_diff, sdev],
             index=['control_name', 'geography', 'observed', 'predicted', 'difference', 'pct_difference', 'N', 'prmse', 'mean_pct_diff', 'sdev'])
-    
+
+        if 'geo_quantiles' in sub_summary.columns and quantile is not None:
+            stat_data['geo_quantiles'] = quantile
+
         # Frequency Plot    
         if plot:
             # Preparing data for difference frequency plot
@@ -173,30 +179,75 @@ class Validation:
         #Create plot directory
         if not os.path.exists(os.path.join(self.settings['VALID_DIR'], 'plots')):
             os.makedirs(os.path.join(self.settings['VALID_DIR'], 'plots'))
+            
+        # Distribution of BG size        
+        print(f'Generating geography size distribution plots')
+        for geo in self.settings['SUB_GEOGRAPHIES']:            
+            self.summaries[geo]['geo_quantiles'] = pd.qcut(
+                self.summaries[geo]['h_total_control'], 
+                q=4, 
+                labels=['Q1', 'Q2', 'Q3', 'Q4']
+            )
+            
+            ax = sns.histplot(data = self.summaries[geo], x = 'h_total_control', binwidth=100, multiple = 'dodge', palette = 'Set2')
+            ax.set(ylabel='Frequency', xlabel='Households', title=f'Distribution of {geo} sizes')    
+            ax.figure.set_size_inches(8, 6)
+            ax.figure.tight_layout()
+            ax.figure.savefig(os.path.join(self.settings['VALID_DIR'], 'plots', f'{geo}_size_distribution.png'))
+            plt.close()
 
         # Computing convergance statistics and write out results            
         assert self.controls is not None, "Controls not found"
         
-        super_geos = set(self.settings['GEOGRAPHIES']) - set(self.settings['SUB_GEOGRAPHIES'])
-        super_geos.add(None)
-        
-        for geo in super_geos:
+        super_geos = set(self.settings['GEOGRAPHIES']) - set(self.settings['SUB_GEOGRAPHIES'])        
+        control_geos = list(super_geos)
+        control_geos.extend([None])        
+        for geo in control_geos:
             agg_controls = self.controls.copy()
             geo_suffix = ''
-            plot = True
+            plot = False
             
             if geo is not None:
                 geo_suffix = f'_{geo}'
                 agg_controls['geography'] += geo_suffix 
-                plot = False
+                plot = False           
+            else:
+                def calc_qstats(k):
+                    return agg_controls.apply(lambda x: self.process_control(x, plot=False, quantile=k), axis=1)
+                    
+                qstats_dict = {k: calc_qstats(k) for k in ['Q1', 'Q2', 'Q3', 'Q4']}
+                qstats_df = pd.concat(qstats_dict.values())
+                fname = os.path.join(self.settings['VALID_DIR'], f'populationsim_stats_quantiles.csv')
+                qstats_df.to_csv(fname, index=False)
                 
-            stats = agg_controls.apply(lambda x: self.process_control(x, plot=plot), axis=1)            
+                # Convergance plot
+                print('Generating SDEV convergence plot')
+                fig, axes = plt.subplots(nrows=1, ncols=4, sharey=True, constrained_layout=True, figsize=(15, 8))                
+                fig.tight_layout()
+                fig.suptitle('Validation by Geography Size (Mean +/- SDEV)')
+                for i, k in enumerate(['Q1', 'Q2', 'Q3', 'Q4']):
+                    ax = axes[i]
+                    qstats = qstats_dict[k]
+                    sns.scatterplot(
+                        y = 'control_name', x = 'mean_pct_diff', data = qstats,
+                        color = 'steelblue', size=3, ax=ax, legend=False
+                    )                    
+                    ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = qstats, xerr = 'sdev', fmt = ' ', color = 'steelblue', elinewidth=0.1, capsize=2, capthick=0.5)
+                    ax.axvline(0, 0, 1, color="coral", linewidth=0.5)
+                    # ax.figure.tight_layout()                    
+                    ax.set(ylabel='Control', xlabel=f'{k} Percentage Difference')
+                    ax.set_xticklabels(ax.get_xticklabels(), fontsize=6)
+                    ax.set_yticklabels(ax.get_yticklabels(), fontsize=6)
+                fig.savefig(os.path.join(self.settings['VALID_DIR'], 'plots', f'convergance-sdev_quantiles.png'))
+                plt.close()
+                
+            stats = agg_controls.apply(lambda x: self.process_control(x, plot=plot, quantile=None), axis=1)                          
             fname = os.path.join(self.settings['VALID_DIR'], f'populationsim_stats{geo_suffix}.csv')
-            stats.to_csv(fname, index=False)            
-        
+            stats.to_csv(fname, index=False)
+                    
             # Convergance plot
             print('Generating SDEV convergence plot')
-            ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')
+            ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')            
             ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = stats, xerr = 'sdev', fmt = 'o', color = 'steelblue')
             ax.axvline(0, 0, 1, color="coral")
             ax.set(ylabel='Control', xlabel='Percentage Difference', title='Region PopulationSim Controls Validation (Mean +/- SDEV)')    
@@ -217,11 +268,8 @@ class Validation:
             ax.figure.savefig(os.path.join(self.settings['VALID_DIR'], 'plots', f'convergance-prmse{geo_suffix}.png'))
             plt.close()
         
-        # Uniformity Analysis
-        plot_geos = self.settings['GEOGRAPHIES']
-        uniformity_geos = plot_geos[:(plot_geos.index(self.settings['SEED_GEOGRAPHY']) + 1)]
-        
-        for geo in uniformity_geos:
+        # Uniformity Analysis        
+        for geo in super_geos:
             print(f'Generating uniformity analysis plot for {geo}...')
             self.expanded_hhid['FINALWEIGHT'] = 1
             summary_hhid = self.expanded_hhid[['hh_id', 'FINALWEIGHT']].groupby('hh_id').sum().reset_index()
