@@ -163,7 +163,7 @@ class Validation:
             ax.set(xlabel='Difference', ylabel='Frequency', title=plot_title)            
             ax.figure.tight_layout()
             # plt.show()
-            fname = os.path.join(self.settings['VALID_DIR'], 'plots', f'{control_id}_{geography}.png')        
+            fname = os.path.join(self.settings['VALID_DIR'], 'plots/controls', f'{control_id}_{geography}.png')        
             ax.figure.savefig(fname)
             plt.close()
             
@@ -177,8 +177,8 @@ class Validation:
         self.read_data()
                 
         #Create plot directory
-        if not os.path.exists(os.path.join(self.settings['VALID_DIR'], 'plots')):
-            os.makedirs(os.path.join(self.settings['VALID_DIR'], 'plots'))
+        if not os.path.exists(os.path.join(self.settings['VALID_DIR'], 'plots/controls')):
+            os.makedirs(os.path.join(self.settings['VALID_DIR'], 'plots/controls'), exist_ok=True)
             
         # Distribution of BG size        
         print(f'Generating geography size distribution plots')
@@ -205,7 +205,7 @@ class Validation:
         for geo in control_geos:
             agg_controls = self.controls.copy()
             geo_suffix = ''
-            plot = False
+            plot = True
             
             if geo is not None:
                 geo_suffix = f'_{geo}'
@@ -247,8 +247,9 @@ class Validation:
                     
             # Convergance plot
             print('Generating SDEV convergence plot')
-            ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')            
-            ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = stats, xerr = 'sdev', fmt = 'o', color = 'steelblue')
+            ax = sns.scatterplot(y = 'control_name', x = 'mean_pct_diff', data = stats, color = 'steelblue')
+            if not stats['sdev'].isna().all():           
+                ax.errorbar(y = 'control_name', x = 'mean_pct_diff', data = stats, xerr = 'sdev', fmt = 'o', color = 'steelblue')
             ax.axvline(0, 0, 1, color="coral")
             ax.set(ylabel='Control', xlabel='Percentage Difference', title='Region PopulationSim Controls Validation (Mean +/- SDEV)')    
             ax.figure.set_size_inches(8, 10)
