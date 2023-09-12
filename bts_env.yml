@@ -15,7 +15,7 @@ dependencies:
     - pypums
     - census
     - "--editable git+https://github.com/ActivitySim/activitysim.git@v1.1.3#egg=activitysim ./src/activitysim"
-    - "--editable git+https://github.com/nick-fournier-rsg/populationsim#egg=populationsim ./src/populationsim"
+    - "--editable git+https://github.com/nick-fournier-rsg/populationsim@v0.6.0#egg=populationsim ./src/populationsim"
     # - "--editable ./src/activitysim"
     # - "--editable ./src/populationsim"
     
