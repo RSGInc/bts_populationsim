@@ -160,7 +160,7 @@ def fetch_from_api(data_type: str) -> dict:
     data_type = data_type.upper()
     
     assert data_type in ['PUMS', 'ACS'], 'data_type must be either "PUMS" or "ACS"'
-    assert isinstance(settings.STATES, list), 'settings.STATES must be a list'
+    assert isinstance(settings.STATES_AND_TERRITORIES, list), 'settings.STATES_AND_TERRITORIES must be a list'
     assert isinstance(settings.FIPS, list), 'settings.FIPS must be a list'
     
     try:

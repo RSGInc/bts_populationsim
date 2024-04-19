@@ -19,9 +19,10 @@ SETUP_DIR = os.path.dirname(__file__)
 RAW_DATA_DIR = os.path.join(SETUP_DIR, 'raw')
 
 # ACS data | This just will list all states
-STATES = [x.abbr for x in states.STATES]
+STATES_AND_TERRITORIES = ["PR"]
+# STATES = [x.abbr for x in states.STATES]
 ACS_TYPE = 'acs5'
-BATCH_SIZE = 50
+BATCH_SIZE = 1
 
 """
 You must define the PUMS fields you want to use for households and persons,
@@ -82,8 +83,8 @@ ACS_REMAINDERS = {
 # -------------------_DO NOT EDIT BELOW THIS LINE_------------------- #
 # Inferred constants
 CENSUS_API_KEY = os.getenv('CENSUS_API_KEY')
-STATES = STATES if isinstance(STATES, list) else [STATES]
-FIPS = [getattr(states.lookup(x), 'fips') for x in STATES] 
+STATES_AND_TERRITORIES = STATES_AND_TERRITORIES if isinstance(STATES_AND_TERRITORIES, list) else [STATES_AND_TERRITORIES]
+FIPS = [getattr(states.lookup(x), 'fips') for x in STATES_AND_TERRITORIES] 
 
 ACS_AGGREGATOR = pd.read_csv(os.path.join(POPSIM_DIR, 'configs/controls_aggregator.csv'))
 PUMS_AGGREGATOR = pd.read_csv(os.path.join(POPSIM_DIR, 'configs/controls.csv'))

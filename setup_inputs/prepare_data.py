@@ -12,7 +12,7 @@ class CreateInputData:
     def __init__(self, replace: bool = True, verbose: bool = True) -> None:
                 
         self.FIPS = settings.FIPS
-        self.STATES = settings.STATES
+        self.STATES_AND_TERRITORIES = settings.STATES_AND_TERRITORIES
         self.replace = replace
         self.verbose = verbose
         
@@ -33,19 +33,19 @@ class CreateInputData:
         self.PUMS_DATA_FINAL = {}
         self.XWALK_FINAL = pd.DataFrame()
             
-    def create_inputs(self, STATES: list = settings.STATES, data_dir = None):
+    def create_inputs(self, STATES_AND_TERRITORIES: list = settings.STATES_AND_TERRITORIES, data_dir = None):
         
         self.skip_pums = False
         self.skip_acs = False
         self.skip_xwalk = False
         
         # Updated FIPS and STATES to create
-        self.STATES = STATES
-        self.FIPS = [getattr(states.lookup(s), 'fips') for s in STATES]
+        self.STATES_AND_TERRITORIES = STATES_AND_TERRITORIES
+        self.FIPS = [getattr(states.lookup(s), 'fips') for s in STATES_AND_TERRITORIES]
         
         # PATHS
         if not data_dir:
-            data_dir = os.path.join(settings.POPSIM_DIR, 'data', '-'.join(self.STATES))
+            data_dir = os.path.join(settings.POPSIM_DIR, 'data', '-'.join(self.STATES_AND_TERRITORIES))
             
         if not os.path.exists(data_dir):
             os.makedirs(data_dir, exist_ok=True)
@@ -57,7 +57,7 @@ class CreateInputData:
         self.PUMS_DATA_PATHS = {level: f'{data_dir}/seed_{label_map[level]}.csv' for level in settings.PUMS_FIELDS.keys()}
         self.XWALK_PATH = f'{data_dir}/geo_cross_walk.csv'
         
-        print(f'#### Creating POPSIM inputs for {len(self.STATES)} States: ####\n{self.STATES}')
+        print(f'#### Creating POPSIM inputs for {len(self.STATES_AND_TERRITORIES)} States: ####\n{self.STATES_AND_TERRITORIES}')
         # Check which fiels need updating        
         if not self.replace and all([os.path.exists(path) for path in self.PUMS_DATA_PATHS.values()]):  
             print('Seed files already exist, skipping...')

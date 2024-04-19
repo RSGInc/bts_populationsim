@@ -163,7 +163,7 @@ def parse_census_ftp(url: str, cache_dir: str, data_type: str) -> list:
             if data_type == 'geography':
                 is_state = os.path.splitext(href)[0].split('_')[2] in settings.FIPS
             elif data_type == 'pums':
-                is_state = os.path.splitext(href)[0][-2:].upper() in settings.STATES
+                is_state = os.path.splitext(href)[0][-2:].upper() in settings.STATES_AND_TERRITORIES
             else:
                 raise Exception(f'Invalid data type {data_type}')
         except:
