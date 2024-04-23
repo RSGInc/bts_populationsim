@@ -1,7 +1,25 @@
 # bts_populationsim
 
+## Setup environment (poetry)
+Poetry is an alternative package management and environment management system. It differs from conda in that it manages the project package dependencies as well as the environment. https://python-poetry.org/
 
-## Setup environment
+Install poetry:
+```bash
+pip install poetry
+```
+
+Install the project dependencies:
+```bash
+poetry install
+```
+
+If a lockfile exists, it will try to use that first. A lockfile provides an exact snapshot of the dependencies that were installed when the lockfile was created and avoids needing to resolve dependencies again. If you don't have a lockfile, you can create one after installing the dependencies:
+```bash
+poetry lock
+```
+This will create a `poetry.lock` file from your current environment.
+
+## Setup environment (conda)
 
 I created a environment setup batch script to create a conda environment. This will essentiall run the following steps:
 

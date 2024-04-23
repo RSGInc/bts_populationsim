@@ -11,6 +11,7 @@ import re
 import os
 import argparse
 import subprocess
+import sys
 from copy import copy
 from setup_inputs.prepare_data import CreateInputData
 from setup_inputs import settings, utils
@@ -23,6 +24,14 @@ parser.add_argument('--data', type=str)
 parser.add_argument('--output', type=str)
 
 popsim_dir = os.path.join(os.path.dirname(__file__), 'populationsim')
+
+# Find the python path string to the current virtual environment to pass to subprocess
+python_path = (
+    subprocess.Popen(['where python'], stdout=subprocess.PIPE)
+    .communicate()[0].decode('utf-8').split('\n')[0]
+    # Cleanup escaped characters like \r\n
+    .replace('\r', '').replace('\n', '')
+)
 
 
 def cleanup_output(output_dir):
@@ -102,7 +111,7 @@ if __name__ == '__main__':
                 if not os.path.exists(args.output):
                     os.makedirs(args.output, exist_ok=True)
                 
-                command = ['python', '-m', 'run_populationsim']
+                command = [python_path, '-m', 'run_populationsim']
                 for k, arg in vars(args).items():                    
                     arg = [arg] if isinstance(arg, str) else arg                    
                     for subarg in arg:
