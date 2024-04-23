@@ -4,9 +4,13 @@
 ## Setup environment
 
 1. **Create a new conda environment:** You can install and run PopulationSim in default “base” python environment or you can set up new environment:
+```
    conda create --name bts_popS python=3.11.5 
+```
 Use the following command to activate the environment:
+```
     conda activate bts_popS 
+```
 2. **Install all dependencies and PopulationSim:**
 After cloning this repository, install all dependencies and the forked version of PopulationSim either directly from GitHub or with Conda/Mamba:
 
@@ -21,6 +25,7 @@ After cloning this repository, install all dependencies and the forked version o
     https://github.com/nick-fournier-rsg/populationsim
 
 3. **Install required python packages:** Intall all the required python packages in the environment to run populatiosim using following command:
+ <br>
     pip install -r requirements.txt 
 
 ## Configuration
