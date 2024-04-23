@@ -15,9 +15,9 @@ Use the following command to activate the environment:
 After cloning this repository, install all dependencies and the forked version of PopulationSim either directly from GitHub or with Conda/Mamba:
 
     2a. **Installing from GitHub:** Install populationsim fork directly from GitHub using pip. This will install all dependencies and the forked version of PopulationSim to your current Python environment.
-
+```
     pip install git+https://github.com/nick-fournier-rsg/populationsim.git@v0.6.1#egg=populationsim
-
+```
     2b. **Installing with Conda/Mamba:** The easiest way to install the fork is to use Conda or Mamba. This will install all dependencies and the forked version of PopulationSim.
 
     Detail installation direction can be found in this link:
@@ -25,8 +25,9 @@ After cloning this repository, install all dependencies and the forked version o
     https://github.com/nick-fournier-rsg/populationsim
 
 3. **Install required python packages:** Intall all the required python packages in the environment to run populatiosim using following command:
- <br>
+```
     pip install -r requirements.txt 
+```
 
 ## Configuration
 I created a set of data preparation scripts which fetch Census PUMS and ACS data and prepare it for use with populationsim. The scripts are located in the `./setup` folder. 
