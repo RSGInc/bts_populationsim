@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import os
+os.environ['DC_STATEHOOD'] = '1'
 from itertools import chain
 from us import states
 from setup_inputs import settings, utils, geographies, fetch

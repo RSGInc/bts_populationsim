@@ -1,4 +1,5 @@
 import os
+os.environ['DC_STATEHOOD'] = '1'
 from pathlib import Path
 from dotenv import load_dotenv
 import pandas as pd

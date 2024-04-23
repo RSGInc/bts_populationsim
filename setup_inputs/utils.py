@@ -7,6 +7,7 @@ from tqdm import tqdm
 from itertools import islice
 from bs4 import BeautifulSoup
 import os
+os.environ['DC_STATEHOOD'] = '1'
 import us
 
 from setup_inputs import settings

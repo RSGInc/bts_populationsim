@@ -1,4 +1,5 @@
 import os
+os.environ['DC_STATEHOOD'] = '1'
 import geopandas as gpd
 import pandas as pd
 from us import states

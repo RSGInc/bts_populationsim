@@ -1,5 +1,6 @@
-import us
 import os
+os.environ['DC_STATEHOOD'] = '1'
+import us
 import numpy as np
 import pandas as pd
 import zipfile
