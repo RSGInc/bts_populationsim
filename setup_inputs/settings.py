@@ -20,8 +20,8 @@ SETUP_DIR = os.path.dirname(__file__)
 RAW_DATA_DIR = os.path.join(SETUP_DIR, 'raw')
 
 # ACS data | This just will list all states
-STATES_AND_TERRITORIES = ["PR"]
-# STATES = [x.abbr for x in states.STATES]
+STATES_AND_TERRITORIES = ["DC"]
+# STATES_AND_TERRITORIES = [x.abbr for x in states.STATES_AND_TERRITORIES]
 ACS_TYPE = 'acs5'
 BATCH_SIZE = 1
 
