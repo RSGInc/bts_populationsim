@@ -17,7 +17,7 @@ After cloning this repository, install all dependencies and the forked version o
     2a. **Installing from GitHub:** Install populationsim fork directly from GitHub using pip. This will install all dependencies and the forked version of PopulationSim to your current Python environment.
 ```
     pip install git+https://github.com/nick-fournier-rsg/populationsim.git@v0.6.1#egg=populationsim
-```
+
     2b. **Installing with Conda/Mamba:** The easiest way to install the fork is to use Conda or Mamba. This will install all dependencies and the forked version of PopulationSim.
 
     Detail installation direction can be found in this link:
