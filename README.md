@@ -3,25 +3,26 @@
 
 ## Setup environment
 
-I created a environment setup batch script to create a conda environment. This will essentiall run the following steps:
+1. **Create a new conda environment:** You can install and run PopulationSim in default “base” python environment or you can set up new environment:
+   conda create --name bts_popS python=3.11.5 
+Use the following command to activate the environment:
+    conda activate bts_popS 
+2. **Install all dependencies and PopulationSim:**
+After cloning this repository, install all dependencies and the forked version of PopulationSim either directly from GitHub or with Conda/Mamba:
 
-You can use whatever preferred Python environment management system, but I will demonstrate using Mamba, a faster conda alternative.
+2a. **Installing from GitHub:** Install populationsim fork directly from GitHub using pip. This will install all dependencies and the forked version of PopulationSim to your current Python environment.
 
-1. After cloning this repository, clone the `populationsim` and `activitysim` source code into the `./src` folder. The `./src` folder is ignored by git, so you can put anything you want in there. I like to keep all my source code in one place:
-<br>
-```git clone https://github.com/ActivitySim/populationsim.git ./src/populationsim```
+pip install git+https://github.com/nick-fournier-rsg/populationsim.git@v0.6.1#egg=populationsim
 <br><br>
-I found that the latest version of activitysim had a sharrow-related bug that affects multiprocessing, so you may want clone an older release:
-<br>
-```git clone -b v1.2.0 https://github.com/ActivitySim/activitysim.git@v1.2.1 ./src/activitysim```
 
-2. Create the mamba environment from the environment yaml recipe:
-```mamba env create --file bts_env.yml```
+2b. **Installing with Conda/Mamba:** The easiest way to install the fork is to use Conda or Mamba. This will install all dependencies and the forked version of PopulationSim.
 <br><br>
-This will create an environment and install an editable version of populationsim and activitysim as well as any supporting packages. Editable means that any changes in the `./src/populationsim` folder are reflected in the environment. This makes debugging easier and allows you to make changes to the source code without having to reinstall the package.
+Detail installation direction can be found in this link:
+<br>
+https://github.com/nick-fournier-rsg/populationsim
 
-3. Activate the environment:
-```conda activate bts_populationsim```
+3. **Install required python packages:** Intall all the required python packages in the environment to run populatiosim using following command:
+    pip install -r requirements.txt 
 
 ## Configuration
 I created a set of data preparation scripts which fetch Census PUMS and ACS data and prepare it for use with populationsim. The scripts are located in the `./setup` folder. 
