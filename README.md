@@ -3,6 +3,10 @@
 
 ## Setup environment
 
+I created a environment setup batch script to create a conda environment. This will essentiall run the following steps:
+
+You can use whatever preferred Python environment management system, but I will demonstrate using Mamba, a faster conda alternative.
+
 1. **Create a new conda environment:** You can install and run PopulationSim in default “base” python environment or you can set up new environment:
 ```
    conda create --name bts_popS python=3.11.5 
