@@ -26,13 +26,7 @@ parser.add_argument('--output', type=str)
 popsim_dir = os.path.join(os.path.dirname(__file__), 'populationsim')
 
 # Find the python path string to the current virtual environment to pass to subprocess
-python_path = (
-    subprocess.Popen(['where python'], stdout=subprocess.PIPE)
-    .communicate()[0].decode('utf-8').split('\n')[0]
-    # Cleanup escaped characters like \r\n
-    .replace('\r', '').replace('\n', '')
-)
-
+python_path = sys.executable
 
 def cleanup_output(output_dir):
     for x in os.listdir(output_dir):
