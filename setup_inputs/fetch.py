@@ -161,7 +161,7 @@ def fetch_from_api(data_type: str) -> dict:
     data_type = data_type.upper()
     
     assert data_type in ['PUMS', 'ACS'], 'data_type must be either "PUMS" or "ACS"'
-    assert isinstance(settings.STATES_AND_TERRITORIES, list), 'settings.STATES_AND_TERRITORIES must be a list'
+    assert isinstance(settings.STATES, list), 'settings.STATES must be a list'
     assert isinstance(settings.FIPS, list), 'settings.FIPS must be a list'
     
     try:
@@ -229,9 +229,13 @@ def fetch_from_api(data_type: str) -> dict:
             except:
                 # Couldn't read the file, so add geo field to kwargs to be updated
                 print(f'Could not load existing {geo} {data_type} data, fetching')
-                kwargs['state_obj_ls'] = set(us.states.lookup(x) for x in fips_list)
+                #kwargs['state_obj_ls'] = set(us.states.lookup(x) for x in fips_list)
+                kwargs['state_obj_ls'] = set(us.states.lookup(x) for x in fips_list).union(kwargs.get('state_obj_ls', set()))
                 kwargs['geo_fields'][geo] = fields
                 
+            kwargs['geo_fields'][geo] = fields
+            
+            
             # Fetch data, appending the parquet data file for each state.
             if len(kwargs['state_obj_ls']) > 0:
                 print(f'Missing data {geo} {data_type} for {len(kwargs["state_obj_ls"])} states')
