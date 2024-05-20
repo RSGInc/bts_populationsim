@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import os
-os.environ['DC_STATEHOOD'] = '1'
+#os.environ['DC_STATEHOOD'] = '1'
 from itertools import chain
 from us import states
 from setup_inputs import settings, utils, geographies, fetch
@@ -13,7 +13,7 @@ class CreateInputData:
     def __init__(self, replace: bool = True, verbose: bool = True) -> None:
                 
         self.FIPS = settings.FIPS
-        self.STATES_AND_TERRITORIES = settings.STATES_AND_TERRITORIES
+        self.STATES = settings.STATES
         self.replace = replace
         self.verbose = verbose
         
@@ -34,19 +34,19 @@ class CreateInputData:
         self.PUMS_DATA_FINAL = {}
         self.XWALK_FINAL = pd.DataFrame()
             
-    def create_inputs(self, STATES_AND_TERRITORIES: list = settings.STATES_AND_TERRITORIES, data_dir = None):
+    def create_inputs(self, STATES: list = settings.STATES, data_dir = None):
         
         self.skip_pums = False
         self.skip_acs = False
         self.skip_xwalk = False
         
         # Updated FIPS and STATES to create
-        self.STATES_AND_TERRITORIES = STATES_AND_TERRITORIES
-        self.FIPS = [getattr(states.lookup(s), 'fips') for s in STATES_AND_TERRITORIES]
+        self.STATES = STATES
+        self.FIPS = [getattr(states.lookup(s), 'fips') for s in STATES]
         
         # PATHS
         if not data_dir:
-            data_dir = os.path.join(settings.POPSIM_DIR, 'data', '-'.join(self.STATES_AND_TERRITORIES))
+            data_dir = os.path.join(settings.POPSIM_DIR, 'data', '-'.join(self.STATES))
             
         if not os.path.exists(data_dir):
             os.makedirs(data_dir, exist_ok=True)
@@ -58,7 +58,7 @@ class CreateInputData:
         self.PUMS_DATA_PATHS = {level: f'{data_dir}/seed_{label_map[level]}.csv' for level in settings.PUMS_FIELDS.keys()}
         self.XWALK_PATH = f'{data_dir}/geo_cross_walk.csv'
         
-        print(f'#### Creating POPSIM inputs for {len(self.STATES_AND_TERRITORIES)} States: ####\n{self.STATES_AND_TERRITORIES}')
+        print(f'#### Creating POPSIM inputs for {len(self.STATES)} States: ####\n{self.STATES}')
         # Check which fiels need updating        
         if not self.replace and all([os.path.exists(path) for path in self.PUMS_DATA_PATHS.values()]):  
             print('Seed files already exist, skipping...')

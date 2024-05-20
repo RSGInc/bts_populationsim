@@ -60,7 +60,7 @@ if __name__ == '__main__':
     DataCreator = None
 
     # settings.STATES = ['AK', 'WY'] # Debugging
-    for states_chunk in utils.batched(settings.STATES_AND_TERRITORIES, settings.BATCH_SIZE):
+    for states_chunk in utils.batched(settings.STATES, settings.BATCH_SIZE):
         
         if len(states_chunk) > 12:
             state_str_range = states_chunk[0] + '-' + states_chunk[-1]            
@@ -91,7 +91,7 @@ if __name__ == '__main__':
                 DataCreator = CreateInputData(replace=False, verbose=False)
 
             DataCreator.create_inputs(
-                STATES_AND_TERRITORIES=list(states_chunk),
+                STATES=list(states_chunk),
                 data_dir=os.path.join(settings.POPSIM_DIR, 'data', state_str)
             )
         else:

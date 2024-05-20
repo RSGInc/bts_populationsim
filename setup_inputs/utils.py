@@ -7,7 +7,7 @@ from tqdm import tqdm
 from itertools import islice
 from bs4 import BeautifulSoup
 import os
-os.environ['DC_STATEHOOD'] = '1'
+#os.environ['DC_STATEHOOD'] = '1'
 import us
 
 from setup_inputs import settings
@@ -164,7 +164,7 @@ def parse_census_ftp(url: str, cache_dir: str, data_type: str) -> list:
             if data_type == 'geography':
                 is_state = os.path.splitext(href)[0].split('_')[2] in settings.FIPS
             elif data_type == 'pums':
-                is_state = os.path.splitext(href)[0][-2:].upper() in settings.STATES_AND_TERRITORIES
+                is_state = os.path.splitext(href)[0][-2:].upper() in settings.STATES
             else:
                 raise Exception(f'Invalid data type {data_type}')
         except:

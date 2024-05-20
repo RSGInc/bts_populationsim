@@ -1,5 +1,5 @@
 import os
-os.environ['DC_STATEHOOD'] = '1'
+#os.environ['DC_STATEHOOD'] = '1'
 from pathlib import Path
 from dotenv import load_dotenv
 import pandas as pd
@@ -20,8 +20,8 @@ SETUP_DIR = os.path.dirname(__file__)
 RAW_DATA_DIR = os.path.join(SETUP_DIR, 'raw')
 
 # ACS data | This just will list all states
-STATES_AND_TERRITORIES = ["DC"]
-# STATES_AND_TERRITORIES = [x.abbr for x in states.STATES_AND_TERRITORIES]
+STATES = ["AL"]
+# STATES = [x.abbr for x in states.STATES]
 ACS_TYPE = 'acs5'
 BATCH_SIZE = 1
 
@@ -84,8 +84,8 @@ ACS_REMAINDERS = {
 # -------------------_DO NOT EDIT BELOW THIS LINE_------------------- #
 # Inferred constants
 CENSUS_API_KEY = os.getenv('CENSUS_API_KEY')
-STATES_AND_TERRITORIES = STATES_AND_TERRITORIES if isinstance(STATES_AND_TERRITORIES, list) else [STATES_AND_TERRITORIES]
-FIPS = [getattr(states.lookup(x), 'fips') for x in STATES_AND_TERRITORIES] 
+STATES = STATES if isinstance(STATES, list) else [STATES]
+FIPS = [getattr(states.lookup(x), 'fips') for x in STATES] 
 
 ACS_AGGREGATOR = pd.read_csv(os.path.join(POPSIM_DIR, 'configs/controls_aggregator.csv'))
 PUMS_AGGREGATOR = pd.read_csv(os.path.join(POPSIM_DIR, 'configs/controls.csv'))
