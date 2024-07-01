@@ -40,6 +40,11 @@ PUMS_FIELDS = {
         'HINCP': int, 
         'VEH': int,
         'HUPAC': int,
+        'TEN': int,
+        'MRGP': int,
+        'SMOCP': int,
+        'RNTP': int,
+        'GRNTP': int,
     },
     'PER': {
         'SERIALNO': str,
