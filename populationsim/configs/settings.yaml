@@ -120,6 +120,10 @@ output_synthetic_population:
       - HINCP
       - VEH
       - HUPAC
+      - TEN
+      - SMOCP
+      - RNTP
+      - GRNTP
   persons:
     filename: synthetic_persons.csv
     columns:

@@ -15,15 +15,16 @@ p_race_aapi,BG,persons,1000,P_RACE_AAPI,p_race,"persons.RAC1P.isin([6,7]) & (per
 p_race_other,BG,persons,1000,P_RACE_OTHER,p_race,"~persons.RAC1P.isin([1,2,6,7]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
 p_hispanic,BG,persons,1000,P_HISPANIC,p_hispanic,(persons.HISP != 1) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
 p_non_hispanic,BG,persons,1000,P_NON_HISPANIC,p_hispanic,(persons.HISP == 1) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)
-h_size_1,TRACT,households,1000,H_SIZE_1,h_size,(households.NP == 1) & (households.WGTP > 0) & (households.WGTP < np.inf)
-h_size_2,TRACT,households,1000,H_SIZE_2,h_size,(households.NP == 2) & (households.WGTP > 0) & (households.WGTP < np.inf)
-h_size_3,TRACT,households,1000,H_SIZE_3,h_size,(households.NP == 3) & (households.WGTP > 0) & (households.WGTP < np.inf)
-h_size_4_plus,TRACT,households,1000,H_SIZE_4PLUS,h_size,(households.NP >= 4) & (households.WGTP > 0) & (households.WGTP < np.inf)
-h_no_veh,TRACT,households,1000,H_NO_VEH,h_veh,(households.VEH == 0) & (households.WGTP > 0) & (households.WGTP < np.inf)
-h_veh_1,TRACT,households,1000,H_VEH_1,h_veh,(households.VEH == 1) & (households.WGTP > 0) & (households.WGTP < np.inf)
-h_veh_2,TRACT,households,1000,H_VEH_2,h_veh,(households.VEH == 2) & (households.WGTP > 0) & (households.WGTP < np.inf)
-h_veh_3,TRACT,households,1000,H_VEH_3,h_veh,(households.VEH == 3) & (households.WGTP > 0) & (households.WGTP < np.inf)
-h_veh_4more,TRACT,households,1000,H_VEH_4MORE,h_veh,"households.VEH.isin([4,5,6]) & (households.WGTP > 0) & (households.WGTP < np.inf)"
+h_size_1,BG,households,1000,H_SIZE_1,h_size,(households.NP == 1) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_size_2,BG,households,1000,H_SIZE_2,h_size,(households.NP == 2) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_size_3,BG,households,1000,H_SIZE_3,h_size,(households.NP == 3) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_size_4,BG,households,1000,H_SIZE_4,h_size,(households.NP == 4) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_size_5_plus,BG,households,1000,H_SIZE_5PLUS,h_size,(households.NP >= 5) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_no_veh,BG,households,1000,H_NO_VEH,h_veh,(households.VEH == 0) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_veh_1,BG,households,1000,H_VEH_1,h_veh,(households.VEH == 1) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_veh_2,BG,households,1000,H_VEH_2,h_veh,(households.VEH == 2) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_veh_3,BG,households,1000,H_VEH_3,h_veh,(households.VEH == 3) & (households.WGTP > 0) & (households.WGTP < np.inf)
+h_veh_4more,BG,households,1000,H_VEH_4MORE,h_veh,"households.VEH.isin([4,5,6]) & (households.WGTP > 0) & (households.WGTP < np.inf)"
 p_mode_auto_other,TRACT,persons,1000,P_MODE_AUTO_OTHER,p_mode,"persons.JWTRNS.isin([1, 7, 8, 12]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
 p_mode_transit,TRACT,persons,1000,P_MODE_TRANSIT,p_mode,"persons.JWTRNS.isin([2, 3, 4, 5, 6]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
 p_mode_walk_bike,TRACT,persons,1000,P_MODE_WALK_BIKE,p_mode,"persons.JWTRNS.isin([9,10]) & (persons.PWGTP > 0) & (persons.PWGTP < np.inf)"
