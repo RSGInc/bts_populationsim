@@ -92,11 +92,54 @@ pwgtp_1yr_5yr_puma['ADJ_FACTOR_PER'] = pwgtp_1yr_5yr_puma['PUMA_SUM_1yr'] / pwgt
 pwgtp_puma_adj_factor = pwgtp_1yr_5yr_puma[['PUMA', 'ADJ_FACTOR_PER']]
 
 pwgtp_state_adj_factor = sum_1yr_wgtp_state/sum_5yr_pwgtp_state
-
-
+os.getcwd()
 ##multiply with seed_households and seed_person
-seed_hh = pd.read_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\seed_households.csv')
-seed_per = pd.read_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\seed_persons.csv')
+main_folder_path = 'E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\'
+
+def list_files_for_states(state_path):
+        """
+    Lists and reads all CSV files in the specified state folder.
+
+    Args:
+    state_folder (str): The name of the state folder to list CSV files from.
+
+    Returns:
+    list: A dictionary with file names as keys and DataFrames as value.
+    """
+        state_folder_path = os.path.join(main_folder_path, state_path)
+        if not os.path.exists(state_folder_path):
+            raise FileNotFoundError(f"The folder {state_path} does not exist in the main directory.")
+        
+        state_data_files = [file for file in os.listdir(state_folder_path) if file.endswith('.csv')] 
+
+        dataframes = {}
+        for csv_file in state_data_files:
+            file_path = os.path.join(state_folder_path, csv_file)
+            df = pd.read_csv(file_path)
+            dataframes[csv_file] = df
+
+        return dataframes
+
+STATE = 'AL'
+state_data_files = list_files_for_states(STATE)
+
+for file_name, df in state_data_files.items():
+#     print(f"File: {file_name}")
+    
+    if file_name == 'seed_households.csv':
+         seed_hh = df
+    if file_name == 'seed_persons.csv':
+         seed_per = df
+    if file_name == 'control_totals_BG.csv':
+         control_tot_BG = df
+    if file_name == 'control_totals_STATE.csv':
+         control_tot_STATE = df
+    if file_name == 'control_totals_TRACT.csv':
+         control_tot_TRACT = df
+    if file_name == 'scaled_control_totals_meta.csv':
+         scaled_control = df
+    if file_name == 'geo_cross_walk.csv':
+         geo_crosswalk = df
 
 seed_hh = pd.merge(seed_hh, wgtp_puma_adj_factor, on='PUMA', how='left')
 seed_hh['WGTP'] = seed_hh['WGTP'] * seed_hh['ADJ_FACTOR_HH']
@@ -105,19 +148,6 @@ seed_hh.drop(columns=['ADJ_FACTOR_HH'], inplace=True)
 seed_per = pd.merge(seed_per, pwgtp_puma_adj_factor, on='PUMA', how='left')
 seed_per['PWGTP'] = seed_per['PWGTP'] * seed_per['ADJ_FACTOR_PER']
 seed_per.drop(columns=['ADJ_FACTOR_PER'], inplace=True)
-
-seed_hh.to_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\seed_households.csv', index=False)
-seed_per.to_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\seed_persons.csv', index=False)
-
-
-#####################################################################################
-control_tot_BG = pd.read_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\control_totals_BG.csv')
-control_tot_STATE = pd.read_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\control_totals_STATE.csv')
-control_tot_TRACT = pd.read_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\control_totals_TRACT.csv')
-scaled_control = pd.read_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\scaled_control_totals_meta.csv')
-geo_crosswalk = pd.read_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\geo_cross_walk.csv')
-
-control_tot_BG['H_TOTAL'].sum()
 
 BG_ID = geo_crosswalk[['BG', 'PUMA']]
 TRACT_ID = geo_crosswalk[['TRACT', 'PUMA']]
@@ -179,8 +209,7 @@ scale_per_col = ['P_TOTAL',
                 'P_UNIVERSITY',
                 'P_MODE_AUTO_OTHER', 'P_MODE_TRANSIT', 'P_MODE_WALK_BIKE', 'P_MODE_WFH']
 
-scaled_control['H_TOTAL'].sum()
-scaled_control['P_TOTAL'].sum()
+
 control_tot_BG[bg_hh_col] = control_tot_BG[bg_hh_col].apply(lambda x: x * control_tot_BG['ADJ_FACTOR_HH'], axis=0)
 control_tot_BG[bg_hh_col] = control_tot_BG[bg_hh_col].round().astype(int)
 control_tot_BG[bg_per_col] = control_tot_BG[bg_per_col].apply(lambda x: x * control_tot_BG['ADJ_FACTOR_PER'], axis=0)
@@ -202,13 +231,19 @@ scaled_control[scale_per_col] = scaled_control[scale_per_col] * pwgtp_state_adj_
 scaled_control[scale_per_col] = scaled_control[scale_per_col].round().astype(int)
 
 
+dataframes = {
+     'seed_households.csv': seed_hh,
+     'seed_persons.csv': seed_per,
+     'control_totals_BG.csv': control_tot_BG,
+     'control_totals_STATE.csv': control_tot_STATE,
+     'control_totals_TRACT.csv': control_tot_TRACT,
+     'scaled_control_totals_meta.csv': scaled_control
+}    
 
+## Save to the folder
+def save_to_csv(df, file_name, state_path):
+     output_path = os.path.join(main_folder_path, state_path, file_name)
+     df.to_csv(output_path, index=False)
 
-
-
-
-
-control_tot_BG.to_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\control_totals_BG.csv', index=False)
-control_tot_STATE.to_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\control_totals_STATE.csv', index=False)
-control_tot_TRACT.to_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\control_totals_TRACT.csv', index=False)
-scaled_control.to_csv('E:\\bts_populationsim_adib\\bts_populationsim\\populationsim\\data\\SD\\scaled_control_totals_meta.csv', index=False)
+for file_name, df in dataframes.items():
+    save_to_csv(df, file_name, STATE)
