@@ -15,7 +15,6 @@ with open('hh_config.json', 'r') as file:
 
 # Load .env file
 load_dotenv()
-# api_key = '69fe3cb68c9e7ddab38d3db38ae445bcade203cb'
 api_key = os.getenv('CENSUS_API_KEY')
 
 state_fips = '11' ## change the fips here
