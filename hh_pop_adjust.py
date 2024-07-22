@@ -4,12 +4,21 @@ import json
 import pandas as pd
 import numpy as np
 from census import Census
+import us
 from us import states
+os.environ['DC_STATEHOOD'] = '1'
+from dotenv import load_dotenv
 
-api_key = '69fe3cb68c9e7ddab38d3db38ae445bcade203cb'
+## configure from JSON file
+with open('hh_config.json', 'r') as file:
+    config = json.load(file)
 
-state_fips = '46'
+# Load .env file
+load_dotenv()
+# api_key = '69fe3cb68c9e7ddab38d3db38ae445bcade203cb'
+api_key = os.getenv('CENSUS_API_KEY')
 
+state_fips = '11' ## change the fips here
 
 def fetch_pums_data(year, dataset, state_fips, variables, api_key):
     url = f'https://api.census.gov/data/{year}/acs/{dataset}/pums?get={variables},ST,PUMA&for=public%20use%20microdata%20area:*&in=state:{state_fips}&key={api_key}'
@@ -18,6 +27,8 @@ def fetch_pums_data(year, dataset, state_fips, variables, api_key):
     if response.status_code == 200:
         census_data = response.json()
         df = pd.DataFrame(census_data[1:], columns=census_data[0])
+        df['ST'] = df['ST'].apply(lambda x: f'{int(x):02}')
+        df['PUMA'] = df['PUMA'].apply(lambda x: f'{int(x):05}')
         df['PUMA'] = df['ST'] + df['PUMA']
         return df
     else:
@@ -26,13 +37,12 @@ def fetch_pums_data(year, dataset, state_fips, variables, api_key):
         return None
 
 
-
 # ==========================================
 ## Households: WGTP
 # ==========================================
 
 ### for 1-year data 
-df_1yr_wgtp = fetch_pums_data(year='2021', dataset='acs1', state_fips=state_fips, variables='WGTP', api_key=api_key)
+df_1yr_wgtp = fetch_pums_data(year='2019', dataset='acs1', state_fips=state_fips, variables='WGTP', api_key=api_key)
 df_1yr_wgtp = df_1yr_wgtp.apply(pd.to_numeric, errors = 'ignore')
 df_1yr_wgtp.drop(columns=["state", "public use microdata area"], inplace=True)
 
@@ -67,7 +77,7 @@ wgtp_state_adj_factor = sum_1yr_wgtp_state/sum_5yr_wgtp_state
 # ==========================================
 ## Persons: PWGTP
 # ==========================================
-df_1yr_pwgtp = fetch_pums_data(year='2021', dataset='acs1', state_fips=state_fips, variables='PWGTP', api_key=api_key)
+df_1yr_pwgtp = fetch_pums_data(year='2019', dataset='acs1', state_fips=state_fips, variables='PWGTP', api_key=api_key)
 df_1yr_pwgtp = df_1yr_pwgtp.apply(pd.to_numeric, errors = 'ignore')
 df_1yr_pwgtp.drop(columns=["state", "public use microdata area"], inplace=True)
 
@@ -124,7 +134,9 @@ def list_files_for_states(state_path):
 
         return dataframes
 
-STATE = 'SD'
+state_abr = config['state_abr']
+# STATE = 'CT' # change state directory here
+STATE = state_abr.get(state_fips, 'Unknown')
 state_data_files = list_files_for_states(STATE)
 
 for file_name, df in state_data_files.items():
@@ -195,11 +207,15 @@ TRACT_ID = TRACT_ID.drop_duplicates(subset='TRACT', ignore_index= True)
 adjustment_factor_BG = pd.merge(BG_ID, wgtp_puma_adj_factor, on= 'PUMA', how= 'left')
 adjustment_factor_BG = pd.merge(adjustment_factor_BG, pwgtp_puma_adj_factor, on= 'PUMA', how= 'left')
 control_tot_BG = control_tot_BG.merge(adjustment_factor_BG, on='BG', how='left')
-
+control_tot_BG = control_tot_BG.fillna(1)
 
 adjustment_factor_TRACT = pd.merge(TRACT_ID, wgtp_puma_adj_factor, on= 'PUMA', how= 'left')
 adjustment_factor_TRACT = pd.merge(adjustment_factor_TRACT, pwgtp_puma_adj_factor, on= 'PUMA', how= 'left')
 control_tot_TRACT = control_tot_TRACT.merge(adjustment_factor_TRACT, on='TRACT', how='left')
+control_tot_TRACT = control_tot_TRACT.fillna(1)
+
+control_tot_TRACT.isna().sum()
+control_tot_BG.isna().sum()
 
 st_hh_col = ['H_TOTAL', 
              'H_CHILDREN', 'H_NO_CHILDREN', 
@@ -248,17 +264,13 @@ control_tot_TRACT = control_tot_TRACT.drop(columns=['PUMA', 'ADJ_FACTOR_HH', 'AD
 scaled_control[scale_hh_col] = scaled_control[scale_hh_col] * wgtp_state_adj_factor
 scaled_control[scale_per_col] = scaled_control[scale_per_col] * pwgtp_state_adj_factor
 
-#### fetching variables from acs census data table
-
-# configure from JSON file
-with open('hh_config.json', 'r') as file:
-    config = json.load(file)
+## fetching variables from acs census data table
 
 variables = config['variables']
 estimated_variables = config['estimated_variables']
 
 def fetch_acs_data(state_fips):
-     data = Census(api_key).acs1.state(variables, state_fips, year=2021)
+     data = Census(api_key).acs1.state(variables, state_fips, year=2019)
      df = pd.DataFrame(data)
 
      #estimated variables for control_variables
@@ -272,21 +284,51 @@ def fetch_acs_data(state_fips):
      df = df[['STATE'] + derived_var]
      return df
 
-all_data = []
-added_states = set()
+try:
+    all_state_acs_df
+    data_already_fetched = True
+except NameError:
+    data_already_fetched = False
 
-for state in states.STATES:
-     if state.name not in added_states:
-          acs_data = fetch_acs_data(state.fips)
-          # acs_data['state'] = state.name
-          all_data.append(acs_data)
-          added_states.add(state.name)
+if not data_already_fetched:
+    all_data = []
+    added_states = set()
+
+    for state in us.states.STATES:
+        if state.name not in added_states:
+            acs_data = fetch_acs_data(state.fips)
+            all_data.append(acs_data)
+            added_states.add(state.name)
+
+    dc_fips = '11'
+    if 'District of Columbia' not in added_states:
+        dc_data = fetch_acs_data(dc_fips)
+        all_data.append(dc_data)
+        added_states.add('District of Columbia')
+        
+    all_state_acs_df = pd.concat(all_data, ignore_index=True)
+
+# all_data = []
+# added_states = set()
+
+# for state in states.STATES:
+#      if state.name not in added_states:
+#           acs_data = fetch_acs_data(state.fips)
+#           # acs_data['state'] = state.name
+#           all_data.append(acs_data)
+#           added_states.add(state.name)
      
+# dc_fips = '11'
+# if 'District of Columbia' not in added_states:
+#     dc_data = fetch_acs_data(dc_fips)
+#     all_data.append(dc_data)
+#     added_states.add('District of Columbia')
 
-all_state_acs_df = pd.concat(all_data, ignore_index=True)
-# all_state_acs_df.to_csv(os.path.join(main_folder_path, 'census_acs1_2021.csv'),index=False)
-each_state_df = pd.DataFrame(all_state_acs_df.loc[all_state_acs_df['STATE'] == '46']) # change the state fips 
 
+# all_state_acs_df = pd.concat(all_data, ignore_index=True)
+# # all_state_acs_df.to_csv(os.path.join(main_folder_path, 'acs1_2019_control.csv'),index=False)
+each_state_df = pd.DataFrame(all_state_acs_df.loc[all_state_acs_df['STATE'] == state_fips]) 
+each_state_df= each_state_df.reset_index(drop=True)
 
 ## additional adjustment of WGTP and PWGTP
 add_wgtp_adj = (each_state_df['H_TOTAL']/(seed_hh['WGTP'].sum())).iloc[0]
@@ -302,8 +344,8 @@ additional_variables_acs['P_NON_WORKER'] = each_state_df['P_TOTAL'] - each_state
 additional_variables_acs['P_NON_UNIVERSITY'] = each_state_df['P_TOTAL'] - each_state_df['P_UNIVERSITY']
 additional_variables_acs['P_MODE_NA'] = each_state_df['P_TOTAL'] - each_state_df['P_MODE_AUTO_OTHER'] - each_state_df['P_MODE_TRANSIT'] - each_state_df['P_MODE_WALK_BIKE'] - each_state_df['P_MODE_WFH']
 
-each_state_df = (each_state_df.loc[:, ~each_state_df.columns.isin(['STATE'])]).reset_index(drop=True) / (control_tot_STATE.loc[:, ~control_tot_STATE.columns.isin(['STATE'])]).reset_index(drop=True)
-additional_variables_acs = additional_variables_acs.reset_index(drop=True) / additional_variables_tract_bg.reset_index(drop=True)
+each_state_df.loc[:, ~each_state_df.columns.isin(['STATE'])] /= control_tot_STATE.loc[:, ~control_tot_STATE.columns.isin(['STATE'])]
+additional_variables_acs /= additional_variables_tract_bg
 
 each_state_df = pd.concat([each_state_df, additional_variables_acs], axis=1)
 
@@ -325,7 +367,7 @@ for variables in each_state_df.columns:
     if variables in include_columns_TRACT:
         control_tot_TRACT[variables] *= each_state_df[variables][0]
 
-
+#### 
 control_tot_BG[bg_hh_col] = control_tot_BG[bg_hh_col].round().astype(int)
 control_tot_BG[bg_per_col] = control_tot_BG[bg_per_col].round().astype(int)
 control_tot_STATE[st_hh_col] = control_tot_STATE[st_hh_col].round().astype(int)
@@ -335,6 +377,9 @@ control_tot_TRACT[tc_per_col] = control_tot_TRACT[tc_per_col].round().astype(int
 scaled_control[scale_hh_col] = scaled_control[scale_hh_col].round().astype(int)
 scaled_control[scale_per_col] = scaled_control[scale_per_col].round().astype(int)
 
+control_tot_BG[['H_TOTAL','H_CHILDREN','P_TOTAL']].sum()
+seed_hh['WGTP'].sum()
+seed_per['PWGTP'].sum()
 
 dataframes = {
      'seed_households.csv': seed_hh,
@@ -352,4 +397,5 @@ def save_to_csv(df, file_name, state_path):
 
 for file_name, df in dataframes.items():
     save_to_csv(df, file_name, STATE)
+
 
