@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 import numpy as np
+import us
+from us import states
 
 
 system_path = os.getcwd()
@@ -8,14 +10,8 @@ system_path_populationsim = os.path.join(system_path, 'populationsim')
 data_folder_path = os.path.join(system_path_populationsim, 'data')
 output_folder_path = os.path.join(system_path_populationsim, 'output_mp')
 
-#states
 
-states_folders = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", 
-                  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-                  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-                  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-                  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
-                  ]
+states_folders = [state.abbr for state in us.states.STATES] + ["DC"]
 
 ## expanded HH ID's
 expanded_household_ids = pd.DataFrame()
