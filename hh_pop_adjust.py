@@ -17,7 +17,8 @@ with open('hh_config.json', 'r') as file:
 load_dotenv()
 api_key = os.getenv('CENSUS_API_KEY')
 
-state_fips = '11' ## change the fips here
+state_fips = '46' ## change the fips here
+YEAR = '2021' ## change the year here
 
 def fetch_pums_data(year, dataset, state_fips, variables, api_key):
     url = f'https://api.census.gov/data/{year}/acs/{dataset}/pums?get={variables},ST,PUMA&for=public%20use%20microdata%20area:*&in=state:{state_fips}&key={api_key}'
@@ -41,7 +42,7 @@ def fetch_pums_data(year, dataset, state_fips, variables, api_key):
 # ==========================================
 
 ### for 1-year data 
-df_1yr_wgtp = fetch_pums_data(year='2019', dataset='acs1', state_fips=state_fips, variables='WGTP', api_key=api_key)
+df_1yr_wgtp = fetch_pums_data(year=YEAR, dataset='acs1', state_fips=state_fips, variables='WGTP', api_key=api_key)
 df_1yr_wgtp = df_1yr_wgtp.apply(pd.to_numeric, errors = 'ignore')
 df_1yr_wgtp.drop(columns=["state", "public use microdata area"], inplace=True)
 
@@ -76,7 +77,7 @@ wgtp_state_adj_factor = sum_1yr_wgtp_state/sum_5yr_wgtp_state
 # ==========================================
 ## Persons: PWGTP
 # ==========================================
-df_1yr_pwgtp = fetch_pums_data(year='2019', dataset='acs1', state_fips=state_fips, variables='PWGTP', api_key=api_key)
+df_1yr_pwgtp = fetch_pums_data(year=YEAR, dataset='acs1', state_fips=state_fips, variables='PWGTP', api_key=api_key)
 df_1yr_pwgtp = df_1yr_pwgtp.apply(pd.to_numeric, errors = 'ignore')
 df_1yr_pwgtp.drop(columns=["state", "public use microdata area"], inplace=True)
 
@@ -269,12 +270,12 @@ variables = config['variables']
 estimated_variables = config['estimated_variables']
 
 def fetch_acs_data(state_fips):
-     data = Census(api_key).acs1.state(variables, state_fips, year=2019)
+     data = Census(api_key).acs1.state(variables, state_fips, year=int(YEAR))
      df = pd.DataFrame(data)
 
      #estimated variables for control_variables
      for control_var, components in estimated_variables.items():
-          df[control_var] = sum(df[var].astype(int) for var in components)
+          df[control_var] = sum(df[var].fillna(1).astype(int) for var in components)
      
      # keeping only the control variables
      derived_var = list(estimated_variables.keys())
@@ -307,24 +308,6 @@ if not data_already_fetched:
         
     all_state_acs_df = pd.concat(all_data, ignore_index=True)
 
-# all_data = []
-# added_states = set()
-
-# for state in states.STATES:
-#      if state.name not in added_states:
-#           acs_data = fetch_acs_data(state.fips)
-#           # acs_data['state'] = state.name
-#           all_data.append(acs_data)
-#           added_states.add(state.name)
-     
-# dc_fips = '11'
-# if 'District of Columbia' not in added_states:
-#     dc_data = fetch_acs_data(dc_fips)
-#     all_data.append(dc_data)
-#     added_states.add('District of Columbia')
-
-
-# all_state_acs_df = pd.concat(all_data, ignore_index=True)
 # # all_state_acs_df.to_csv(os.path.join(main_folder_path, 'acs1_2019_control.csv'),index=False)
 each_state_df = pd.DataFrame(all_state_acs_df.loc[all_state_acs_df['STATE'] == state_fips]) 
 each_state_df= each_state_df.reset_index(drop=True)
